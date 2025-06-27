@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>情有可原</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        #audioFile {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>上傳音訊檔案進行情緒辨識</h2>
+    <input type="file" id="audioFile" accept=".wav" />
+    <br/>
+    <button onclick="uploadFile()">上傳並辨識</button>
+    <p id="result">預測結果將顯示在這裡</p>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('audioFile');
+            const resultElement = document.getElementById('result');
+
+            if (fileInput.files.length === 0) {
+                alert('請選擇一個音訊檔案');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // 顯示處理中提示
+            resultElement.textContent = '辨識中...';
+            resultElement.style.color = 'gray';
+
+            try {
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                resultElement.textContent = `情緒預測結果：${result.emotion}`;
+                resultElement.style.color = 'blue'; 
+            } catch (err) {
+                console.error('上傳錯誤', err);
+                resultElement.textContent = '發生錯誤，請再試一次';
+                resultElement.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>
