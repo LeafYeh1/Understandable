@@ -68,24 +68,6 @@
     <button onclick="uploadFile()">上傳並辨識</button>
     <p id="result">預測結果將顯示在這裡</p>
 
-    <!-- 兩個可放東西的框 -->
-    <div class="box-container">
-        <div class="box" id="box1">
-            <h4>整體情緒圓餅圖</h4>
-            <canvas id="pieChart" width="280" height="180"></canvas>
-        </div>
-        <div class="box" id="box2">
-            <h4>時間序列折線圖</h4>
-            <canvas id="lineChart" width="280" height="180"></canvas>
-        </div>
-    </div>
-
-    <!-- 第三個框，放在下面 -->
-    <div class="bottom-box" id="box3">文字建議</div>
-
-    <!-- 最下面的按鈕 -->
-    <button id="finalButton" onclick="alert('你點擊了最下面的按鈕')">輸出</button>
-
     <script>
         let pieChartInstance = null;
         let lineChartInstance = null;
@@ -114,43 +96,6 @@
                 const result = await response.json();
                 resultElement.textContent = `情緒預測結果：${result.emotion}`;
                 resultElement.style.color = 'blue'; 
-
-                // 顯示結果到框中
-                // 顯示餅圖
-                const pieData = {
-                    labels: Object.keys(result.pie_chart),
-                    datasets: [{
-                        label: '情緒分布',
-                        data: Object.values(result.pie_chart),
-                        backgroundColor: [
-                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-                        ]
-                    }]
-                };
-
-                new Chart(document.getElementById('pieChart'), {
-                    type: 'pie',
-                    data: pieData
-                });
-
-                // 顯示折線圖
-                const lineData = {
-                    labels: result.line_chart.map((_, i) => `第${i + 1}段`),
-                    datasets: [{
-                        label: '情緒走勢',
-                        data: result.line_chart.map(label => result.pie_chart[label]),
-                        fill: false,
-                        borderColor: 'blue',
-                        tension: 0.2
-                    }]
-                };
-
-                new Chart(document.getElementById('lineChart'), {
-                    type: 'line',
-                    data: lineData
-                });
-
-                document.getElementById('box3').textContent = `可以在這裡顯示更多細節、圖表或分析`;
             } catch (err) {
                 console.error('上傳錯誤', err);
                 resultElement.textContent = '發生錯誤，請再試一次';
