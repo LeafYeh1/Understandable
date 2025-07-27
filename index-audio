@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>情有可原</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 40px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .box-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .box {
+            width: 300px;
+            height: 200px;
+            border: 2px dashed rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            text-align: left;
+            background-color: #f9f9f9;
+            overflow-y: hidden;
+        }
+        .bottom-box {
+            width: 640px;
+            height: 200px;
+            border: 2px dashed rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            padding: 10px;
+            background-color: #f0f0f0;
+            margin: 30px auto;
+            text-align: left;
+            overflow-y: hidden;
+        }
+        #finalButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            background-color: darkblue;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #finalButton:hover {
+            background-color: darkblue;
+        }
+        #audioPreview {
+            margin-top: 15px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- 改錄音 -->
+    <h2>錄製音訊進行情緒辨識</h2>
+    <button id="startBtn">開始錄音</button>
+    <button id="stopBtn" disabled>停止錄音並辨識</button>
+    <p id="result">預測結果將顯示在這裡</p>
+    <div id="audioPreview"></div> <!-- 錄音預覽播放 -->
+
+    <!-- 兩個可放東西的框 -->
+    <div class="box-container">
+        <div class="box" id="box1">
+            <h4>整體情緒圓餅圖</h4>
+            <canvas id="pieChart" width="280" height="180"></canvas>
+        </div>
+        <div class="box" id="box2">
+            <h4>時間序列折線圖</h4>
+            <canvas id="lineChart" width="280" height="180"></canvas>
+        </div>
+    </div>
+
+    <!-- 第三個框，放在下面 -->
+    <div class="bottom-box" id="box3">文字建議</div>
+
+    <!-- 最下面的按鈕 -->
+    <button id="finalButton" onclick="alert('你點擊了最下面的按鈕')">輸出</button>
+
+<script>
+    let mediaRecorder;
+    let audioChunks = [];
+    let timerInterval;
+    let seconds = 0;
+    let pieChartInstance = null;
+    let lineChartInstance = null;
+
+    document.getElementById('startBtn').onclick = async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        seconds = 0;
+
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            clearInterval(timerInterval);
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            showAudioPreview(audioBlob);
+            sendAudio(audioBlob);
+        };
+
+        mediaRecorder.start();
+
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = false;
+        document.getElementById('result').textContent = '錄音中... 0 秒';
+        document.getElementById('result').style.color = 'gray';
+
+        // 計時器顯示
+        timerInterval = setInterval(() => {
+            seconds++;
+            document.getElementById('result').textContent = `錄音中... ${seconds} 秒`;
+        }, 1000);
+    };
+
+    document.getElementById('stopBtn').onclick = () => {
+        mediaRecorder.stop();
+        document.getElementById('stopBtn').disabled = true;
+        document.getElementById('startBtn').disabled = false;
+    };
+
+    function showAudioPreview(blob) {
+        const audioURL = URL.createObjectURL(blob);
+        const audioPreview = document.getElementById('audioPreview');
+        audioPreview.innerHTML = `<audio controls src="${audioURL}"></audio>`;
+    }
+
+    async function sendAudio(audioBlob) {
+        const formData = new FormData();
+        formData.append('file', audioBlob, 'recorded.webm');
+
+        try {
+            const response = await fetch('http://localhost:5000/predict', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('result').textContent = `情緒預測結果：${result.emotion || '分析完成'}`;
+            document.getElementById('result').style.color = 'blue';
+
+            // 畫圖前先清除
+            if (pieChartInstance) pieChartInstance.destroy();
+            if (lineChartInstance) lineChartInstance.destroy();
+
+            // 畫圓餅圖
+            const pieData = {
+                labels: Object.keys(result.pie_chart),
+                datasets: [{
+                    label: '情緒分布',
+                    data: Object.values(result.pie_chart),
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+                }]
+            };
+            pieChartInstance = new Chart(document.getElementById('pieChart'), {
+                type: 'pie',
+                data: pieData
+            });
+
+            // 畫折線圖
+            const lineData = {
+                labels: result.line_chart.map((_, i) => `第${i + 1}段`),
+                datasets: [{
+                    label: '情緒走勢',
+                    data: result.line_chart.map(label => result.pie_chart[label]),
+                    fill: false,
+                    borderColor: 'blue',
+                    tension: 0.2
+                }]
+            };
+            lineChartInstance = new Chart(document.getElementById('lineChart'), {
+                type: 'line',
+                data: lineData
+            });
+
+            document.getElementById('box3').textContent = `可以在這裡顯示更多細節、圖表或分析`;
+
+        } catch (err) {
+            console.error('上傳錯誤', err);
+            document.getElementById('result').textContent = '發生錯誤，請再試一次';
+            document.getElementById('result').style.color = 'red';
+        }
+    }
+</script>
+
+</body>
+</html>
