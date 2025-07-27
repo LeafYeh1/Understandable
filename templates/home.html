@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>首頁</title>
+    <style>
+        body {
+            background-color: #f0f8ff;
+            font-family: 'Helvetica Neue', sans-serif;
+            color: #333;
+            padding: 40px;
+        }
+        .container {
+            background-color: white;
+            max-width: 600px;
+            margin: auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #3366cc;
+            text-align: center;
+        }
+        p {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 16px;
+            background-color: #3366cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        a:hover {
+            background-color: #295bb1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>歡迎登入！</h2>
+        <p><strong>諮商師名稱：</strong>{{ user.username }}</p>
+        <p><strong>醫院 / 診所：</strong>{{ user.clinic }}</p>
+        <a href="/logout">登出</a>
+    </div>
+</body>
+</html>

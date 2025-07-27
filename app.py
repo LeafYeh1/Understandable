@@ -1,16 +1,37 @@
 from flask import Flask, request, jsonify
+from flask import render_template, session, redirect, url_for, flash
 from flask_cors import CORS
 from tensorflow.keras.models import load_model
 import numpy as np
 import librosa
 from pydub import AudioSegment
 from io import BytesIO
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+# CORS 設定
 CORS(app, origins=["http://localhost:8000"])
+
+# add 
+app.secret_key = 'supersecretkey'
+# 資料庫設定（請替換成你自己的帳號密碼）
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123456@localhost/emotion_app' # 這邊有密碼要注意一下
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
 
 # 定義情緒類別
 class_names = ['ang', 'dis', 'fear', 'happy', 'neu', 'sad']
+
+# 使用者模型
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    account = db.Column(db.String(100), nullable=False)
+    clinic = db.Column(db.String(300))
 
 class EmotionAnalyzer:
     def __init__(self, model_path="emotion_model.h5"):
@@ -107,6 +128,78 @@ class EmotionAnalyzer:
 
 analyzer = EmotionAnalyzer()
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        account = request.form["account"]
+        password = request.form["password"]
+        user = User.query.filter_by(account=account).first()
+        if user and check_password_hash(user.password, password):
+            session["user_id"] = user.id
+            return redirect(url_for("home"))
+        else:
+            flash("帳號或密碼錯誤")
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.pop("user_id", None)
+    return redirect(url_for("login"))
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        email = request.form["email"]
+        password = request.form["password"]
+        confirm_password = request.form["confirm_password"]
+        account = request.form["account"]
+        clinic = request.form["clinic"]
+
+        # 檢查是否重複帳號或 email
+        if User.query.filter_by(username=username).first():
+            flash("使用者名稱已被註冊")
+            return render_template("register.html")
+        if User.query.filter_by(email=email).first():
+            flash("電子郵件已被註冊")
+            return render_template("register.html")
+
+        # 密碼不一致
+        if password != confirm_password:
+            flash("兩次輸入的密碼不一致")
+            return render_template("register.html")
+
+        # 密碼強度檢查（至少8字元，含大小寫與數字）
+        import re
+        if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$", password):
+            flash("密碼需至少8位，包含大寫、小寫與數字")
+            return render_template("register.html")
+
+        # 建立帳號
+        hashed_pw = generate_password_hash(password)
+        new_user = User(
+            username=username,
+            email=email,
+            password=hashed_pw,
+            account=account,
+            clinic=clinic
+        )
+        db.session.add(new_user)
+        db.session.commit()
+
+        session["user_id"] = new_user.id
+        flash("註冊成功，歡迎使用！")
+        return redirect(url_for("home"))
+
+    return render_template("register.html")
+
+@app.route("/home")
+def home():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    user = User.query.get(session["user_id"])
+    return render_template("home.html", user=user)
+
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -129,5 +222,8 @@ def predict():
     }), 200
 
 
+
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all() # 確保資料庫和表格已建立
     app.run(debug=True)
