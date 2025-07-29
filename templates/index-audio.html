@@ -152,7 +152,7 @@
                 body: formData
             });
             const result = await response.json();
-            document.getElementById('result').textContent = `情緒預測結果：${result.emotion || '分析完成'}`;
+            document.getElementById('result').textContent = `情緒預測結果：'}`;
             document.getElementById('result').style.color = 'blue';
 
             // 畫圖前先清除
@@ -193,8 +193,7 @@
 
         } catch (err) {
             console.error('上傳錯誤', err);
-            document.getElementById('result').textContent = '發生錯誤，請再試一次';
-            document.getElementById('result').style.color = 'red';
+            document.getElementById('result').textContent = '錄音上傳';
         }
     }
 </script>
