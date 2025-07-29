@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>首頁</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             background-color: #f0f8ff;
@@ -12,13 +13,13 @@
         }
         .container {
             background-color: white;
-            max-width: 600px;
+            max-width: 800px;
             margin: auto;
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
         }
-        h2 {
+        h1 {
             color: #3366cc;
             text-align: center;
         }
@@ -26,26 +27,79 @@
             font-size: 18px;
             line-height: 1.6;
         }
-        a {
+        .options {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 40px;
+            gap: 20px;
+        }
+        .option-box {
+            width: 180px;
+            height: 160px;
+            padding: 20px;
+            background-color: #e6f0ff;
+            border-radius: 50%;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
+        }
+        .option-box:hover {
+            background-color: #d2e4fc;
+            transform: translateY(-4px);
+        }
+        .option-box i {
+            font-size: 32px;
+            color: #3366cc;
+            margin-bottom: 8px;
+        }
+        .option-box h3 {
+            font-size: 16px;
+            color: #3366cc;
+            margin: 0;
+        }
+        a.logout {
             display: inline-block;
-            margin-top: 20px;
+            margin: 40px auto 0;
             padding: 10px 16px;
             background-color: #3366cc;
             color: white;
             text-decoration: none;
             border-radius: 6px;
+            text-align: center;
         }
-        a:hover {
+        a.logout:hover {
             background-color: #295bb1;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>歡迎登入！</h2>
+        <h1>歡迎登入！</h1>
         <p><strong>諮商師名稱：</strong>{{ user.username }}</p>
         <p><strong>醫院 / 診所：</strong>{{ user.clinic }}</p>
-        <a href="/logout">登出</a>
+
+        <div class="options">
+            <a href="/patients" class="option-box">
+                <i class="fas fa-brain"></i>
+                <h3>患者資訊</h3>
+            </a>
+            <a href="/record" class="option-box">
+                <i class="fas fa-microphone"></i>
+                <h3>錄製語音</h3>
+            </a>
+            <a href="/predict_upload" class="option-box">
+                <i class="fas fa-upload"></i>
+                <h3>上傳音檔</h3>
+            </a>
+        </div>
+        <div style="text-align:center;">
+            <a href="/logout" class="logout">登出</a>
+        </div>
     </div>
 </body>
 </html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>新增患者</title>
+    <style>
+        body {
+            background-color: #e6f0ff;
+            font-family: 'Helvetica Neue', sans-serif;
+            padding: 40px;
+        }
+        .form-container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #3366cc;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #3366cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #295bb1;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>新增患者資訊</h2>
+        <form method="POST">
+            <input type="text" name="name" placeholder="姓名" required>
+            <input type="number" name="age" placeholder="年齡" required>
+            <select name="gender" required>
+                <option value="">選擇性別</option>
+                <option value="男">男</option>
+                <option value="女">女</option>
+                <option value="其他">其他</option>
+            </select>
+            <textarea name="note" rows="4" placeholder="備註或診斷說明..."></textarea>
+            <button type="submit">送出</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>患者資訊</title>
+    <style>
+        body {
+            background-color: #e6f0ff;
+            font-family: 'Helvetica Neue', sans-serif;
+            padding: 40px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #3366cc;
+        }
+        .patient-card {
+            background: #f7faff;
+            padding: 16px;
+            margin-bottom: 15px;
+            border-left: 6px solid #3366cc;
+            border-radius: 8px;
+        }
+        .patient-card strong {
+            color: #333;
+        }
+        .add-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 16px;
+            background-color: #3366cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .add-btn:hover {
+            background-color: #295bb1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>我的患者資訊</h2>
+        <a href="/patients/add" class="add-btn">新增患者</a>
+        <!--如果這個諮商師有新增過患者-->
+        {% for p in patients %}
+        <div class="patient-card">
+            <p><strong>姓名：</strong>{{ p.name }}</p>
+            <p><strong>年齡：</strong>{{ p.age }}</p>
+            <p><strong>性別：</strong>{{ p.gender }}</p>
+            <p><strong>備註：</strong>{{ p.note }}</p>
+        </div>
+        <!--沒有新增過患者-->
+        {% else %}
+        <p>尚未新增任何患者。</p>
+        {% endfor %}
+    </div>
+</body>
+</html>

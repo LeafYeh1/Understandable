@@ -72,8 +72,9 @@
 
             <button type="submit">註冊</button>
         </form>
-
         <p>已經有帳號了？<a href="/login">登入</a></p>
+
+        <!--會有暫時性的提示訊息-->
         <div class="messages">
             {% with messages = get_flashed_messages() %}
                 {% if messages %}

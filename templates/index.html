@@ -7,7 +7,12 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            margin-top: 40px;
+            background-color: #e8f1fc;
+            margin: 0;
+            padding: 40px;
+        }
+        h2 {
+            color: #2a5dba;
         }
         #result {
             margin-top: 20px;
@@ -18,46 +23,50 @@
         #audioFile {
             margin-bottom: 10px;
         }
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
         .box-container {
             display: flex;
             justify-content: center;
             gap: 20px;
             margin-top: 30px;
+            flex-wrap: wrap;
         }
         .box {
-            width: 300px;
-            height: 200px;
-            border: 2px dashed rgba(0, 0, 0, 0.1);
+            width: 400px;
+            height: 300px;
+            border: 2px solid #a3c0e9;
             border-radius: 15px;
             padding: 10px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-            text-align: left;
-            background-color: #f9f9f9;
-            overflow-y: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-align: center;     
+            background-color: #ffffff;
+            overflow-y: auto;
         }
         .bottom-box {
             width: 640px;
             height: 200px;
-            border: 2px dashed rgba(0, 0, 0, 0.1);
+            border: 2px solid #a3c0e9;
             border-radius: 15px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             padding: 10px;
-            background-color: #f0f0f0;
+            background-color: #f4f8fe;
             margin: 30px auto;
-            text-align: left;
-            overflow-y: hidden;
+            overflow-y: auto;
         }
         #finalButton {
             padding: 10px 20px;
             font-size: 16px;
             border-radius: 8px;
-            background-color: darkblue;
+            background-color: #2a5dba;
             color: white;
             border: none;
             cursor: pointer;
         }
-        #finalButton:hover {
-            background-color: darkblue;
+        #finalButton:hover, button:hover {
+            background-color: #1d4893;
         }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -114,8 +123,6 @@
                     body: formData
                 });
                 const result = await response.json();
-                resultElement.textContent = `情緒預測結果：${result.emotion}`;
-                resultElement.style.color = 'blue'; 
 
                 // 顯示結果到框中
                 // 顯示餅圖
@@ -129,8 +136,8 @@
                         ]
                     }]
                 };
-
-                new Chart(document.getElementById('pieChart'), {
+                const pieBase64 = document.getElementById('pieChart').toDataURL("image/png")
+                pieChartInstance = new Chart(document.getElementById('pieChart'), {
                     type: 'pie',
                     data: pieData
                 });
@@ -140,19 +147,44 @@
                     labels: result.line_chart.map((_, i) => `第${i + 1}段`),
                     datasets: [{
                         label: '情緒走勢',
-                        data: result.line_chart.map(label => result.pie_chart[label]),
+                        data: result.line_chart.map(label => result.pie_chart[label] || 0),
                         fill: false,
-                        borderColor: 'blue',
+                        borderColor: '#2a5dba',
                         tension: 0.2
                     }]
                 };
-
-                new Chart(document.getElementById('lineChart'), {
+                const lineBase64 = document.getElementById('lineChart').toDataURL("image/png");
+                lineChartInstance = new Chart(document.getElementById('lineChart'), {
                     type: 'line',
                     data: lineData
                 });
 
                 document.getElementById('box3').textContent = `可以在這裡顯示更多細節、圖表或分析`;
+                resultElement.textContent = `情緒預測結果：`;
+                resultElement.style.color = 'blue';
+
+                // ✅ 新增這段：呼叫 PDF 產出 API
+                fetch("http://localhost:5000/generate_report", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        pie_chart: result.pie_chart,
+                        line_chart: result.line_chart,
+                        pie_image: pieBase64,
+                        line_image: lineBase64,
+                        patient_name: "小明"
+                    })
+                })
+                .then(resp => resp.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "情緒報告.pdf";
+                    a.click();
+                });
             } catch (err) {
                 console.error('上傳錯誤', err);
                 resultElement.textContent = '發生錯誤，請再試一次';

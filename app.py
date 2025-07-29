@@ -1,38 +1,58 @@
+# flask 基礎設定
 from flask import Flask, request, jsonify
-from flask import render_template, session, redirect, url_for, flash
-from flask_cors import CORS
+from flask import render_template, send_file, session, redirect, url_for, flash
+from flask_sqlalchemy import SQLAlchemy
+
+# 第三方函式庫
 from tensorflow.keras.models import load_model
 import numpy as np
 import librosa
 from pydub import AudioSegment
 from io import BytesIO
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
+from weasyprint import HTML
 
+# 初始化 Flask 應用
 app = Flask(__name__)
-# CORS 設定
-CORS(app, origins=["http://localhost:8000"])
 
-# add 
+# 設定密鑰和資料庫
 app.secret_key = 'supersecretkey'
-# 資料庫設定（請替換成你自己的帳號密碼）
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123456@localhost/emotion_app' # 這邊有密碼要注意一下
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123456@localhost/emotion_app' 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
 
 # 定義情緒類別
 class_names = ['ang', 'dis', 'fear', 'happy', 'neu', 'sad']
 
-# 使用者模型
+# 使用者(諮商師)資料庫模板
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True) # UID
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     account = db.Column(db.String(100), nullable=False)
     clinic = db.Column(db.String(300))
 
+# 患者資料庫模板
+class Patient(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    age = db.Column(db.Integer)
+    gender = db.Column(db.String(10))
+    note = db.Column(db.String(500))
+    counselor_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # UID
+    
+# 患者的語音情續報告模板(尚未完成)
+class Report(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(200), nullable=False)  # 儲存檔名或路徑
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # 時間戳
+    description = db.Column(db.String(300))  
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id')) # UID
+    patient = db.relationship('Patient', backref=db.backref('reports', lazy=True))
+
+# 情緒分析核心
 class EmotionAnalyzer:
     def __init__(self, model_path="emotion_model.h5"):
         self.model = load_model(model_path)
@@ -111,7 +131,7 @@ class EmotionAnalyzer:
         emotion_counts = {name: 0 for name in class_names}
         line_results = []
 
-        # 找出連續語音段（4 秒）
+        # 找出連續語音段（4 秒）黏合
         for i in range(len(labels) - 1):
             if labels[i] == labels[i+1] == 2:
                 combined = segments[i] + segments[i+1]
@@ -124,10 +144,11 @@ class EmotionAnalyzer:
                 line_results.append(predicted_label)
 
         return emotion_counts, line_results
-
-
+    
+# 初始化情緒分析器
 analyzer = EmotionAnalyzer()
 
+# 登入要求
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -141,11 +162,13 @@ def login():
             flash("帳號或密碼錯誤")
     return render_template("login.html")
 
+# 登出要求
 @app.route("/logout")
 def logout():
     session.pop("user_id", None)
     return redirect(url_for("login"))
 
+# 註冊要求，含密碼強度檢查
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -193,6 +216,7 @@ def register():
 
     return render_template("register.html")
 
+# 前往首頁
 @app.route("/home")
 def home():
     if "user_id" not in session:
@@ -200,7 +224,104 @@ def home():
     user = User.query.get(session["user_id"])
     return render_template("home.html", user=user)
 
+# 患者列表頁面
+@app.route("/patients")
+def patients():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
+    user = User.query.get(session["user_id"])
+    patient_list = Patient.query.filter_by(counselor_id=user.id).all()
+    return render_template("patients.html", user=user, patients=patient_list)
 
+# 完整音檔上傳頁面
+@app.route("/predict_upload")
+def predict_upload():
+    # 檢查使用者是否登入
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
+    user = User.query.get(session["user_id"])
+    return render_template("index.html", user=user)
+
+# 前往錄音頁面
+@app.route("/record")
+def record():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    user = User.query.get(session["user_id"])
+    return render_template("index-audio.html", user=user)
+
+# 新增患者頁面
+@app.route("/patients/add", methods=["GET", "POST"])
+def add_patient():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
+    if request.method == "POST":
+        name = request.form["name"]
+        age = int(request.form["age"])
+        gender = request.form["gender"]
+        note = request.form["note"]
+
+        new_patient = Patient(
+            name=name,
+            age=age,
+            gender=gender,
+            note=note,
+            counselor_id=session["user_id"]
+        )
+        db.session.add(new_patient)
+        db.session.commit()
+        return redirect(url_for("patients"))
+
+    return render_template("add_patient.html")
+
+# 產出文件報告
+@app.route("/generate_report", methods=["POST"])
+def generate_report():
+    data = request.json
+    emotion_summary = data.get("pie_chart", {})
+    emotion_sequence = data.get("line_chart", [])
+    patient_name = data.get("patient_name", "Unknown")
+
+    # 簡易 HTML 模板
+    html_content = f"""
+    <html>
+    <head><meta charset='utf-8'><style>
+        body {{ font-family: Arial; padding: 20px; }}
+        h2 {{ color: #3366cc; }}
+        .section {{ margin-bottom: 30px; }}
+    </style></head>
+    <body>
+        <h2>情緒分析報告</h2>
+        <div class="section">
+            <strong>患者姓名：</strong> {patient_name}<br>
+            <strong>分析時間：</strong> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        </div>
+        <div class="section">
+            <h3>情緒圓餅圖</h3>
+            <img src="{data.get('pie_image')}" width="300">
+         </div>
+        <div class="section">
+            <h3>時間序列折線圖</h3>
+            <img src="{data.get('line_image')}" width="300">
+        </div>
+    </body></html>
+    """
+
+    # 轉成 PDF
+    pdf_buffer = BytesIO()
+    HTML(string=html_content).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
+
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name=f"emotion_report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf",
+        mimetype="application/pdf"
+    )
+# 音檔預測
 @app.route("/predict", methods=["POST"])
 def predict():
     """
@@ -220,8 +341,6 @@ def predict():
         "pie_chart": pie_chart,
         "line_chart": line_chart
     }), 200
-
-
 
 if __name__ == "__main__":
     with app.app_context():
