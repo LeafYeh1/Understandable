@@ -36,25 +36,25 @@
         }
         .box {
             width: 400px;
-            height: 300px;
+            height: 400px;
             border: 2px solid #a3c0e9;
             border-radius: 15px;
             padding: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             text-align: center;     
             background-color: #ffffff;
-            overflow-y: auto;
+            overflow-y: hidden;
         }
         .bottom-box {
             width: 640px;
-            height: 200px;
+            height: 300px;
             border: 2px solid #a3c0e9;
             border-radius: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             padding: 10px;
             background-color: #f4f8fe;
             margin: 30px auto;
-            overflow-y: auto;
+            overflow-y: hidden;
         }
         #finalButton {
             padding: 10px 20px;
@@ -65,6 +65,12 @@
             border: none;
             cursor: pointer;
         }
+        canvas {
+            max-width: 100%;
+            max-height: 300px;
+            height: auto;
+        }
+
         #finalButton:hover, button:hover {
             background-color: #1d4893;
         }
@@ -159,7 +165,14 @@
                     data: lineData
                 });
 
-                document.getElementById('box3').textContent = `可以在這裡顯示更多細節、圖表或分析`;
+                const suggestions = [
+                "建議您多加注意此類情緒的來源，適當抒發有助身心健康。",
+                "這段錄音呈現出明顯情緒波動，建議進一步探討背後原因。",
+                "整體情緒平穩，但仍可觀察細微變化以調整心情。"
+            ];
+                const randomIndex = Math.floor(Math.random() * suggestions.length);
+                document.getElementById('box3').textContent = suggestions[randomIndex];
+
                 resultElement.textContent = `情緒預測結果：`;
                 resultElement.style.color = 'blue';
 
