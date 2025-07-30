@@ -48,7 +48,7 @@
             padding: 10px 20px;
             font-size: 16px;
             border-radius: 8px;
-            background-color: darkblue;
+            background-color: #2a5dba;
             color: white;
             border: none;
             cursor: pointer;
@@ -85,9 +85,14 @@
 
     <!-- 第三個框，放在下面 -->
     <div class="bottom-box" id="box3">文字建議</div>
-
-    <!-- 最下面的按鈕 -->
+    <div class="button-group">
+    <button onclick="history.back()" 
+    style="padding: 10px 20px; font-size: 16px; border-radius: 8px; background-color:#2a5dba; color: white; border: none; cursor: pointer;">返回
+    </button>
     <button id="finalButton" onclick="alert('你點擊了最下面的按鈕')">輸出</button>
+    </div>
+    <!-- 最下面的按鈕 
+    <button id="finalButton" onclick="alert('你點擊了最下面的按鈕')">輸出</button>-->
 
 <script>
     let mediaRecorder;
