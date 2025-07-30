@@ -331,9 +331,22 @@ def predict():
         return jsonify({"error": "No file provided"}), 400
 
     file = request.files["file"]
+    filename = file.filename.lower()
 
-    # 直接從記憶體處理檔案，不儲存到硬碟
-    file_stream = BytesIO(file.read())
+    # 如果是 webm 檔案就轉成 wav
+    if filename.endswith(".webm"):
+        try:
+            print("Converting webm to wav...")
+            audio = AudioSegment.from_file(file, format="webm")
+            wav_io = BytesIO()
+            audio.export(wav_io, format="wav")
+            wav_io.seek(0)
+            file_stream = wav_io
+        except Exception as e:
+            return jsonify({"error": f"Failed to convert webm: {str(e)}"}), 500
+    else:
+        # 直接從記憶體處理檔案，不儲存到硬碟
+        file_stream = BytesIO(file.read())
 
     pie_chart, line_chart = analyzer.analyze(file_stream)
 
