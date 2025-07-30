@@ -40,6 +40,20 @@
             text-decoration: none;
             border-radius: 6px;
         }
+        /* 新增返回按鈕樣式 */
+        .back-btn {
+            display: block;
+            margin: 40px auto 0;
+            padding: 10px 20px;
+            background-color: #2a5dba;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+        }
         .add-btn:hover {
             background-color: #295bb1;
         }
@@ -61,6 +75,8 @@
         {% else %}
         <p>尚未新增任何患者。</p>
         {% endfor %}
+        <!-- 返回主畫面按鈕 -->
+        <a href="/home" class="back-btn">返回</a>
     </div>
 </body>
 </html>
