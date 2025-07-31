@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>情有可原</title>
-   <style>
+    <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -19,6 +19,9 @@
             font-size: 24px;
             font-weight: bold;
             color: #333;
+        }
+        #audioFile {
+            margin-bottom: 10px;
         }
         canvas {
             max-width: 100%;
@@ -38,7 +41,7 @@
             border-radius: 15px;
             padding: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            text-align: center;
+            text-align: center;     
             background-color: #ffffff;
             overflow-y: hidden;
         }
@@ -62,11 +65,14 @@
             border: none;
             cursor: pointer;
         }
+        canvas {
+            max-width: 100%;
+            max-height: 300px;
+            height: auto;
+        }
+
         #finalButton:hover, button:hover {
             background-color: #1d4893;
-        }
-        #audioPreview {
-            margin-top: 15px;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -196,61 +202,82 @@
         const formData = new FormData();
         formData.append('file', audioBlob, 'recorded.webm');
 
+        // 清除前一筆圖表
+            if (pieChartInstance) {
+                pieChartInstance.destroy();
+                pieChartInstance = null;
+            }
+            if (lineChartInstance) {
+                lineChartInstance.destroy();
+                lineChartInstance = null;
+            }
+            // 清空建議文字
+            document.getElementById('box3').textContent = '文字建議';
+
+            // 清空 canvas（確保乾淨）
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            pieCtx.clearRect(0, 0, pieCtx.canvas.width, pieCtx.canvas.height);
+
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            lineCtx.clearRect(0, 0, lineCtx.canvas.width, lineCtx.canvas.height);
+
         try {
             const response = await fetch('http://localhost:5000/predict', {
                 method: 'POST',
                 body: formData
             });
             const result = await response.json();
-            document.getElementById('result').textContent = `情緒預測結果：`;
-            document.getElementById('result').style.color = 'blue';
 
-            // 畫圖前先清除
-            if (pieChartInstance) pieChartInstance.destroy();
-            if (lineChartInstance) lineChartInstance.destroy();
-
-            // 畫圓餅圖
+            // 顯示結果到框中
+            // 顯示餅圖
             const pieData = {
                 labels: Object.keys(result.pie_chart),
                 datasets: [{
                     label: '情緒分布',
                     data: Object.values(result.pie_chart),
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                    ]
                 }]
             };
+            const pieBase64 = document.getElementById('pieChart').toDataURL("image/png")
             pieChartInstance = new Chart(document.getElementById('pieChart'), {
                 type: 'pie',
                 data: pieData
             });
 
-            // 畫折線圖
+            // 顯示折線圖
             const lineData = {
                 labels: result.line_chart.map((_, i) => `第${i + 1}段`),
                 datasets: [{
                     label: '情緒走勢',
-                    data: result.line_chart.map(label => result.pie_chart[label]),
+                    data: result.line_chart.map(label => result.pie_chart[label] || 0),
                     fill: false,
-                    borderColor: 'blue',
+                    borderColor: '#2a5dba',
                     tension: 0.2
                 }]
             };
+            const lineBase64 = document.getElementById('lineChart').toDataURL("image/png");
             lineChartInstance = new Chart(document.getElementById('lineChart'), {
                 type: 'line',
                 data: lineData
             });
-            // 顯示建議
-            const suggestions = [
-                "建議您多加注意此類情緒的來源，適當抒發有助身心健康。",
-                "這段錄音呈現出明顯情緒波動，建議進一步探討背後原因。",
-                "整體情緒平穩，但仍可觀察細微變化以調整心情。"
-            ];
-            const randomIndex = Math.floor(Math.random() * suggestions.length);
-            document.getElementById('box3').textContent = `可以在這裡顯示更多細節、圖表或分析`;
 
-        }catch (err) {
+            const suggestions = [
+            "建議您多加注意此類情緒的來源，適當抒發有助身心健康。",
+            "這段錄音呈現出明顯情緒波動，建議進一步探討背後原因。",
+            "整體情緒平穩，但仍可觀察細微變化以調整心情。"
+        ];
+            const randomIndex = Math.floor(Math.random() * suggestions.length);
+            document.getElementById('box3').textContent = suggestions[randomIndex];
+
+            resultElement.textContent = `情緒預測結果：`;
+            resultElement.style.color = 'blue';
+
+        } catch (err) {
             console.error('上傳錯誤', err);
-            document.getElementById('result').textContent = '發生錯誤，請再試一次';
-            document.getElementById('result').style.color = 'red';
+            resultElement.textContent = '發生錯誤，請再試一次';
+            resultElement.style.color = 'red';
         }
     }
 </script>

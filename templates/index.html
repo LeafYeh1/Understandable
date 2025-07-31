@@ -88,7 +88,6 @@
     </select><br/><br/>
     <input type="file" id="audioFile" accept=".wav" />
     <br/>
-    
     <button onclick="uploadFile()">上傳並辨識</button>
     <p id="result">預測結果將顯示在這裡</p>
 
@@ -120,6 +119,7 @@
         let lineChartInstance = null;
 
         async function uploadFile() {
+            
             const fileInput = document.getElementById('audioFile');
             const resultElement = document.getElementById('result');
 
@@ -134,6 +134,25 @@
 
             resultElement.textContent = '辨識中...';
             resultElement.style.color = 'gray';
+
+            // 清除前一筆圖表
+            if (pieChartInstance) {
+                pieChartInstance.destroy();
+                pieChartInstance = null;
+            }
+            if (lineChartInstance) {
+                lineChartInstance.destroy();
+                lineChartInstance = null;
+            }
+            // 清空建議文字
+            document.getElementById('box3').textContent = '文字建議';
+
+            // 清空 canvas（確保乾淨）
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            pieCtx.clearRect(0, 0, pieCtx.canvas.width, pieCtx.canvas.height);
+
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            lineCtx.clearRect(0, 0, lineCtx.canvas.width, lineCtx.canvas.height);
 
             try {
                 const response = await fetch('http://localhost:5000/predict', {
