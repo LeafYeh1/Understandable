@@ -242,7 +242,8 @@ def predict_upload():
         return redirect(url_for("login"))
     
     user = User.query.get(session["user_id"])
-    return render_template("index.html", user=user)
+    patients = Patient.query.filter_by(counselor_id=user.id).all()
+    return render_template("index.html", user=user, patients=patients)
 
 # 前往錄音頁面
 @app.route("/record")
@@ -250,7 +251,8 @@ def record():
     if "user_id" not in session:
         return redirect(url_for("login"))
     user = User.query.get(session["user_id"])
-    return render_template("index-audio.html", user=user)
+    patients = Patient.query.filter_by(counselor_id=user.id).all()
+    return render_template("index-audio.html", user=user, patients=patients)
 
 # 新增患者頁面
 @app.route("/patients/add", methods=["GET", "POST"])
@@ -281,8 +283,6 @@ def add_patient():
 @app.route("/generate_report", methods=["POST"])
 def generate_report():
     data = request.json
-    emotion_summary = data.get("pie_chart", {})
-    emotion_sequence = data.get("line_chart", [])
     patient_name = data.get("patient_name", "Unknown")
 
     # 簡易 HTML 模板

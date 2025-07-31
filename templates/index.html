@@ -80,8 +80,15 @@
 
 <body>
     <h2>上傳音訊檔案進行情緒辨識</h2>
+    <label for="patientSelect">選擇患者：</label>
+    <select id="patientSelect">
+        {% for patient in patients %}
+            <option value="{{ patient.name }}">{{ patient.name }}</option>
+        {% endfor %}
+    </select><br/><br/>
     <input type="file" id="audioFile" accept=".wav" />
     <br/>
+    
     <button onclick="uploadFile()">上傳並辨識</button>
     <p id="result">預測結果將顯示在這裡</p>
 
@@ -105,10 +112,8 @@
     style="padding: 10px 20px; font-size: 16px; border-radius: 8px; background-color:#2a5dba; color: white; border: none; cursor: pointer;">返回
     </button>
 
-    <button id="finalButton" onclick="alert('你點擊了最下面的按鈕')">輸出</button>
+    <button id="finalButton" onclick="alert('輸出 語音情緒 pdf')">輸出</button>
     </div>
-    <!-- 最下面的按鈕 
-    <button id="finalButton" onclick="alert('你點擊了最下面的按鈕')">輸出</button>-->
 
     <script>
         let pieChartInstance = null;
@@ -183,34 +188,43 @@
                 resultElement.textContent = `情緒預測結果：`;
                 resultElement.style.color = 'blue';
 
-                // ✅ 新增這段：呼叫 PDF 產出 API
-                fetch("http://localhost:5000/generate_report", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        pie_chart: result.pie_chart,
-                        line_chart: result.line_chart,
-                        pie_image: pieBase64,
-                        line_image: lineBase64,
-                        patient_name: "小明"
-                    })
-                })
-                .then(resp => resp.blob())
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "情緒報告.pdf";
-                    a.click();
-                });
             } catch (err) {
                 console.error('上傳錯誤', err);
                 resultElement.textContent = '發生錯誤，請再試一次';
                 resultElement.style.color = 'red';
             }
         }
+        document.getElementById("finalButton").addEventListener("click", async () => {
+            // 把前端的圖表轉成 base64
+            const pieBase64 = document.getElementById('pieChart').toDataURL("image/png").split(',')[1];
+            const lineBase64 = document.getElementById('lineChart').toDataURL("image/png").split(',')[1];
+            const patientName = document.getElementById("patientSelect").value;
+    
+            // 傳送到後端產 PDF
+            const response = await fetch("http://localhost:5000/generate_report", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    pie_image: `data:image/png;base64,${pieBase64}`,
+                    line_image: `data:image/png;base64,${lineBase64}`,
+                    patient_name: patientName
+                })
+            });
+
+            // 接收 PDF blob 並觸發下載
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "情緒報告.pdf";
+                a.click();
+            } else {
+                alert("產生報告失敗！");
+            }
+        });
     </script>
 </body>
 </html>
