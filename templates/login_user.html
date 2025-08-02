@@ -56,13 +56,13 @@
 </head>
 <body>
     <div class="container">
-        <h2>諮商師登入</h2>
-        <form method="POST">
+        <h2>使用者登入</h2>
+        <form method="POST" action="/login_user">
             <input type="text" name="account" placeholder="使用者名稱" required><br>
             <input type="password" name="password" placeholder="密碼" required><br>
             <button type="submit">登入</button>
         </form>
-        <p>還沒有帳號？<a href="/register">註冊</a></p>
+        <p>還沒有帳號？<a href="/register_user">註冊</a></p>
         
         <!--會有暫時性的提示訊息-->
         <div class="messages">

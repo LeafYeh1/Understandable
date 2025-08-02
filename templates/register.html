@@ -56,11 +56,10 @@
 </head>
 <body>
     <div class="container">
-        <h2>註冊諮商師帳號</h2>
+        <h2>註冊{{ '諮商師' if role == 'counselor' else '使用者' }}帳號</h2>
         <form method="POST">
             <input type="text" name="account" placeholder="帳號" required><br>
             <input type="email" name="email" placeholder="電子郵件" required><br>
-            <input type="text" name="username" placeholder="使用者名稱" required><br>
             
             <input type="password" name="password" placeholder="密碼（至少8位，含英文大小寫+數字）"
                 pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" 
@@ -68,8 +67,12 @@
                 
             <input type="password" name="confirm_password" placeholder="確認密碼" required><br>
 
+            <!-- 只有諮商師才需要填寫 clinic -->
+            {% if role == 'counselor' %}
             <input type="text" name="clinic" placeholder="隸屬哪家診所或醫院" required><br>
-
+            {% endif %}
+            
+            <input type="hidden" name="role" value="{{ role }}">
             <button type="submit">註冊</button>
         </form>
         <p>已經有帳號了？<a href="/login">登入</a></p>

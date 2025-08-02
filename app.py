@@ -28,11 +28,11 @@ class_names = ['ang', 'dis', 'fear', 'happy', 'neu', 'sad']
 # 使用者(諮商師)資料庫模板
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True) # UID
-    username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     account = db.Column(db.String(100), nullable=False)
     clinic = db.Column(db.String(300))
+    role = db.Column(db.String(20), nullable=False)  # 角色類型（counselor/user）
 
 # 患者資料庫模板
 class Patient(db.Model):
@@ -147,40 +147,56 @@ class EmotionAnalyzer:
     
 # 初始化情緒分析器
 analyzer = EmotionAnalyzer()
+@app.route("/")
+def choose_role():
+    return render_template("choose_role.html")
 
-# 登入要求
-@app.route("/login", methods=["GET", "POST"])
-def login():
+@app.route("/login_counselor", methods=["GET","POST"])
+def login_counselor():
     if request.method == "POST":
         account = request.form["account"]
         password = request.form["password"]
-        user = User.query.filter_by(account=account).first()
+        user = User.query.filter_by(account=account, role="counselor").first()
         if user and check_password_hash(user.password, password):
             session["user_id"] = user.id
+            session["role"] = "counselor" # 設定角色為諮商師
             return redirect(url_for("home"))
         else:
-            flash("帳號或密碼錯誤")
-    return render_template("login.html")
+            flash("帳號或密碼錯誤，或角色不符")
+    return render_template("login_counselor.html")
 
+@app.route("/login_user", methods=["GET","POST"])
+def login_user():
+    if request.method == "POST":
+        account = request.form["account"]
+        password = request.form["password"]
+        user = User.query.filter_by(account=account, role="user").first()
+        if user and check_password_hash(user.password, password):
+            session["user_id"] = user.id
+            session["role"] = "user" # 設定角色為使用者
+            return redirect(url_for("home"))
+        else:
+            flash("帳號或密碼錯誤，或角色不符")
+    return render_template("login_user.html")
+    
 # 登出要求
 @app.route("/logout")
 def logout():
     session.pop("user_id", None)
-    return redirect(url_for("login"))
+    session.clear()
+    return redirect(url_for("choose_role"))
 
 # 註冊要求，含密碼強度檢查
-@app.route("/register", methods=["GET", "POST"])
-def register():
+@app.route("/register_user", methods=["GET", "POST"])
+def register_user():
     if request.method == "POST":
-        username = request.form["username"]
         email = request.form["email"]
         password = request.form["password"]
         confirm_password = request.form["confirm_password"]
         account = request.form["account"]
-        clinic = request.form["clinic"]
 
         # 檢查是否重複帳號或 email
-        if User.query.filter_by(username=username).first():
+        if User.query.filter_by(account=account).first():
             flash("使用者名稱已被註冊")
             return render_template("register.html")
         if User.query.filter_by(email=email).first():
@@ -201,11 +217,10 @@ def register():
         # 建立帳號
         hashed_pw = generate_password_hash(password)
         new_user = User(
-            username=username,
             email=email,
             password=hashed_pw,
             account=account,
-            clinic=clinic
+            role="user"  # 設定角色為使用者
         )
         db.session.add(new_user)
         db.session.commit()
@@ -214,7 +229,53 @@ def register():
         flash("註冊成功，歡迎使用！")
         return redirect(url_for("home"))
 
-    return render_template("register.html")
+    return render_template("register.html", role="user")
+
+@app.route("/register_counselor", methods=["GET", "POST"])
+def register_counselor():
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+        confirm_password = request.form["confirm_password"]
+        account = request.form["account"]
+        clinic = request.form["clinic"]
+
+        # 檢查是否重複帳號或 email
+        if User.query.filter_by(account=account).first():
+            flash("使用者名稱已被註冊")
+            return render_template("register.html")
+        if User.query.filter_by(email=email).first():
+            flash("電子郵件已被註冊")
+            return render_template("register.html")
+
+        # 密碼不一致
+        if password != confirm_password:
+            flash("兩次輸入的密碼不一致")
+            return render_template("register.html")
+
+        # 密碼強度檢查（至少8字元，含大小寫與數字）
+        import re
+        if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$", password):
+            flash("密碼需至少8位，包含大寫、小寫與數字")
+            return render_template("register.html")
+
+        # 建立帳號
+        hashed_pw = generate_password_hash(password)
+        new_user = User(
+            email=email,
+            password=hashed_pw,
+            account=account,
+            clinic=clinic,
+            role="counselor"  # 設定角色為諮商師
+        )
+        db.session.add(new_user)
+        db.session.commit()
+
+        session["user_id"] = new_user.id
+        flash("註冊成功，歡迎使用！")
+        return redirect(url_for("home"))
+    return render_template("register.html", role="counselor")
+    
 
 # 前往首頁
 @app.route("/home")
@@ -222,7 +283,8 @@ def home():
     if "user_id" not in session:
         return redirect(url_for("login"))
     user = User.query.get(session["user_id"])
-    return render_template("home.html", user=user)
+    role = session.get("role", None)
+    return render_template("home.html", user=user, role=role)
 
 # 患者列表頁面
 @app.route("/patients")
@@ -243,7 +305,8 @@ def predict_upload():
     
     user = User.query.get(session["user_id"])
     patients = Patient.query.filter_by(counselor_id=user.id).all()
-    return render_template("index.html", user=user, patients=patients)
+    role = session.get("role", None)
+    return render_template("index.html", user=user, patients=patients, role=role)
 
 # 前往錄音頁面
 @app.route("/record")
@@ -252,7 +315,8 @@ def record():
         return redirect(url_for("login"))
     user = User.query.get(session["user_id"])
     patients = Patient.query.filter_by(counselor_id=user.id).all()
-    return render_template("index-audio.html", user=user, patients=patients)
+    role = session.get("role", None)
+    return render_template("index-audio.html", user=user, patients=patients, role=role)
 
 # 新增患者頁面
 @app.route("/patients/add", methods=["GET", "POST"])

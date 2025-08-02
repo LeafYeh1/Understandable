@@ -80,14 +80,22 @@
 <body>
     <div class="container">
         <h1>歡迎登入！</h1>
-        <p><strong>諮商師名稱：</strong>{{ user.username }}</p>
-        <p><strong>醫院 / 診所：</strong>{{ user.clinic }}</p>
+
+        {% if role == "counselor" %}
+            <p><strong>諮商師名稱：</strong>{{ user.account }}</p>
+            <p><strong>醫院 / 診所：</strong>{{ user.clinic }}</p>
+        {% elif  role == "user" %}
+            <p><strong>使用者名稱：</strong>{{ user.account }}</p>
+        {% endif %}
 
         <div class="options">
-            <a href="/patients" class="option-box">
+            {% if role == "counselor" %}
+                <a href="/patients" class="option-box">
                 <i class="fas fa-brain"></i>
                 <h3>患者資訊</h3>
-            </a>
+                </a>
+            {% endif %}
+            
             <a href="/record" class="option-box">
                 <i class="fas fa-microphone"></i>
                 <h3>錄製語音</h3>

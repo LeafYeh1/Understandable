@@ -81,12 +81,14 @@
 <body>
     <!-- 改錄音 -->
     <h2>錄製音訊進行情緒辨識</h2>
-    <label for="patientSelect">選擇患者：</label>
-    <select id="patientSelect">
-        {% for patient in patients %}
-            <option value="{{ patient.name }}">{{ patient.name }}</option>
-        {% endfor %}
-    </select><br/><br/>
+    {% if session.role == "counselor" %}
+        <label for="patientSelect">選擇患者：</label>
+        <select id="patientSelect">
+            {% for patient in patients %}
+                <option value="{{ patient.name }}">{{ patient.name }}</option>
+            {% endfor %}
+        </select><br/><br/>
+    {% endif %}
     <button id="startBtn">開始錄音</button>
     <button id="stopBtn" disabled>停止錄音並辨識</button>
     <p id="result">預測結果將顯示在這裡</p>

@@ -80,12 +80,14 @@
 
 <body>
     <h2>上傳音訊檔案進行情緒辨識</h2>
-    <label for="patientSelect">選擇患者：</label>
-    <select id="patientSelect">
-        {% for patient in patients %}
-            <option value="{{ patient.name }}">{{ patient.name }}</option>
-        {% endfor %}
-    </select><br/><br/>
+    {% if session.role == "counselor" %}
+        <label for="patientSelect">選擇患者：</label>
+        <select id="patientSelect">
+            {% for patient in patients %}
+                <option value="{{ patient.name }}">{{ patient.name }}</option>
+            {% endfor %}
+        </select><br/><br/>
+    {% endif %}
     <input type="file" id="audioFile" accept=".wav" />
     <br/>
     <button onclick="uploadFile()">上傳並辨識</button>
