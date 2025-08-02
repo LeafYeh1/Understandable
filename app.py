@@ -12,6 +12,10 @@ from io import BytesIO
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from weasyprint import HTML
+import json
+
+# 文字建議 gemini
+from gemini import generate_response
 
 # 初始化 Flask 應用
 app = Flask(__name__)
@@ -276,7 +280,6 @@ def register_counselor():
         return redirect(url_for("home"))
     return render_template("register.html", role="counselor")
     
-
 # 前往首頁
 @app.route("/home")
 def home():
@@ -348,7 +351,16 @@ def add_patient():
 def generate_report():
     data = request.json
     patient_name = data.get("patient_name", "Unknown")
-
+    role = session.get("role", None)
+    
+    if role == "counselor":
+        subject_label = "患者姓名"
+    else:
+        subject_label = "使用者帳號"
+    print(f"Generating report for {subject_label}: {patient_name}")
+    user = db.session.get(User, session["user_id"])
+    subject_value = patient_name if role == "counselor" else user.account
+    
     # 簡易 HTML 模板
     html_content = f"""
     <html>
@@ -360,7 +372,7 @@ def generate_report():
     <body>
         <h2>情緒分析報告</h2>
         <div class="section">
-            <strong>患者姓名：</strong> {patient_name}<br>
+            <strong>{subject_label}：</strong> {subject_value}<br>
             <strong>分析時間：</strong> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         </div>
         <div class="section">
@@ -418,6 +430,26 @@ def predict():
         "pie_chart": pie_chart,
         "line_chart": line_chart
     }), 200
+
+@app.route("/suggestion", methods=["POST"])
+def suggestion():
+    data = request.get_json()
+    emotion_stats = data.get("emotion_stats", {})  # pie_chart 統計資料
+    line_series = data.get("line_series", [])      # 折線圖情緒序列
+
+    # 組合 prompt 給 Gemini
+    prompt = f"""
+根據以下語音情緒分析結果，請以專業溫和語氣給出簡單明確的建議文字（1-2 句），並且列點給出三或四個可以舒緩這些情緒的方式，
+不要用 markdown 的格式，每次列點都要換行。
+並生出適合回饋給青少年使用者：
+- 整體情緒分佈：{json.dumps(emotion_stats, ensure_ascii=False)}
+- 時間序列情緒變化：{line_series}
+
+請勿重複數據內容，回傳純建議。
+"""
+
+    suggestion_text = generate_response(prompt)
+    return jsonify({"suggestion": suggestion_text})
 
 if __name__ == "__main__":
     with app.app_context():

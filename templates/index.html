@@ -52,7 +52,7 @@
             border-radius: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             padding: 10px;
-            background-color: #f4f8fe;
+            background-color: #ffffff;
             margin: 30px auto;
             overflow-y: hidden;
         }
@@ -106,7 +106,10 @@
     </div>
 
     <!-- 第三個框，放在下面 -->
-    <div class="bottom-box" id="box3">文字建議</div>
+    <div class="bottom-box" id="box3">
+        <h4>文字建議</h4>
+        <div id="suggestionText"></div>  
+    </div>
     
     <div class="button-group">
     <button onclick="history.back()" 
@@ -147,7 +150,7 @@
                 lineChartInstance = null;
             }
             // 清空建議文字
-            document.getElementById('box3').textContent = '文字建議';
+            document.getElementById('suggestionText').textContent = '輸入語音情續分析後，建議文字將顯示在這裡。';
 
             // 清空 canvas（確保乾淨）
             const pieCtx = document.getElementById('pieChart').getContext('2d');
@@ -198,16 +201,26 @@
                     data: lineData
                 });
 
-                const suggestions = [
-                "建議您多加注意此類情緒的來源，適當抒發有助身心健康。",
-                "這段錄音呈現出明顯情緒波動，建議進一步探討背後原因。",
-                "整體情緒平穩，但仍可觀察細微變化以調整心情。"
-            ];
-                const randomIndex = Math.floor(Math.random() * suggestions.length);
-                document.getElementById('box3').textContent = suggestions[randomIndex];
+                // 呼叫後端 /suggestion 取得建議文字
+            const suggestResponse = await fetch("http://localhost:5000/suggestion", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    emotion_stats: result.pie_chart,
+                    line_series: result.line_chart
+                })
+            });
 
-                resultElement.textContent = `情緒預測結果：`;
-                resultElement.style.color = 'blue';
+            if (suggestResponse.ok) {
+                const suggestData = await suggestResponse.json();
+                document.getElementById('suggestionText').textContent = suggestData.suggestion;
+            } else {
+                document.getElementById('box3').textContent = "無法取得建議，請稍後再試。";
+            }
+            resultElement.textContent = `情緒預測結果：`;
+            resultElement.style.color = 'blue';
 
             } catch (err) {
                 console.error('上傳錯誤', err);
@@ -219,19 +232,27 @@
             // 把前端的圖表轉成 base64
             const pieBase64 = document.getElementById('pieChart').toDataURL("image/png").split(',')[1];
             const lineBase64 = document.getElementById('lineChart').toDataURL("image/png").split(',')[1];
-            const patientName = document.getElementById("patientSelect").value;
-    
+
+            // 判斷是否有 <select id="patientSelect"> 元素
+            const select = document.getElementById("patientSelect");
+            const patientName = select ? select.value : null;
+
+            // 組成要送到後端的資料
+            const payload = {
+                pie_image: `data:image/png;base64,${pieBase64}`,
+                line_image: `data:image/png;base64,${lineBase64}`
+            };
+            if (patientName) {
+                payload.patient_name = patientName;
+            }
+
             // 傳送到後端產 PDF
             const response = await fetch("http://localhost:5000/generate_report", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    pie_image: `data:image/png;base64,${pieBase64}`,
-                    line_image: `data:image/png;base64,${lineBase64}`,
-                    patient_name: patientName
-                })
+                body: JSON.stringify(payload)
             });
 
             // 接收 PDF blob 並觸發下載
