@@ -351,8 +351,9 @@ def add_patient():
 def generate_report():
     data = request.json
     patient_name = data.get("patient_name", "Unknown")
+    suggestion = data.get("suggestion", "無建議內容。")
     role = session.get("role", None)
-    
+
     if role == "counselor":
         subject_label = "患者姓名"
     else:
@@ -382,6 +383,10 @@ def generate_report():
         <div class="section">
             <h3>時間序列折線圖</h3>
             <img src="{data.get('line_image')}" width="300">
+        </div>
+        <div class="section">
+            <h3>情緒建議</h3>
+            <p>{suggestion}</p>
         </div>
     </body></html>
     """
@@ -440,8 +445,7 @@ def suggestion():
     # 組合 prompt 給 Gemini
     prompt = f"""
 根據以下語音情緒分析結果，請以專業溫和語氣給出簡單明確的建議文字（1-2 句），並且列點給出三或四個可以舒緩這些情緒的方式，
-不要用 markdown 的格式，每次列點都要換行。
-並生出適合回饋給青少年使用者：
+不要用 markdown 的格式(就是不要有 * 這個符號)，每次列點都要幫我直接換行：
 - 整體情緒分佈：{json.dumps(emotion_stats, ensure_ascii=False)}
 - 時間序列情緒變化：{line_series}
 
@@ -449,6 +453,7 @@ def suggestion():
 """
 
     suggestion_text = generate_response(prompt)
+    print(suggestion_text)
     return jsonify({"suggestion": suggestion_text})
 
 if __name__ == "__main__":

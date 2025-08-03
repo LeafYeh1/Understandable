@@ -74,6 +74,26 @@
         #finalButton:hover, button:hover {
             background-color: #1d4893;
         }
+
+        #emotionLegend {
+            margin-top: 20px;
+            font-size: 15px;
+            background-color: #ffffff;
+            border: 2px solid #a3c0e9;
+            border-radius: 10px;
+            padding: 12px;
+            line-height: 1.8;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        #suggestionText {
+            font-size: 16px;
+            line-height: 1.8;
+            text-align: left;
+            white-space: pre-wrap; /* 防止意外空白折行 */
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -89,26 +109,34 @@
             {% endfor %}
         </select><br/><br/>
     {% endif %}
-    <button id="startBtn">開始錄音</button>
-    <button id="stopBtn" disabled>停止錄音並辨識</button>
+    <div class="record-controls">
+        <button id="startBtn">開始錄音</button>
+        <button id="stopBtn" disabled>停止錄音並辨識</button>
+    </div>
     <p id="result">預測結果將顯示在這裡</p>
+
     <div id="audioPreview"></div> <!-- 錄音預覽播放 -->
 
+    <div id="emotionLegend" class="legend-box">
+        <strong>情緒對應說明：</strong><br/>
+        ang: 生氣😠 、dis: 噁心🤢 、fear: 害怕😨 、
+        happy: 開心😊 、neu: 中性😐 、sad: 傷心😢 
+    </div>
     <!-- 兩個可放東西的框 -->
     <div class="box-container">
         <div class="box" id="box1">
-            <h4>整體情緒圓餅圖</h4>
+            <h3>整體情緒圓餅圖</h3>
             <canvas id="pieChart" width="280" height="180"></canvas>
         </div>
         <div class="box" id="box2">
-            <h4>時間序列折線圖</h4>
+            <h3>時間序列折線圖</h3>
             <canvas id="lineChart" width="280" height="180"></canvas>
         </div>
     </div>
 
     <!-- 第三個框，放在下面 -->
     <div class="bottom-box" id="box3">
-        <h4>文字建議</h4>
+        <h3>文字建議</h3>
         <div id="suggestionText"></div>  <!-- 加這個專門放內容 -->
     </div>
 
@@ -170,6 +198,7 @@
         // 把前端的圖表轉成 base64
         const pieBase64 = document.getElementById('pieChart').toDataURL("image/png").split(',')[1];
         const lineBase64 = document.getElementById('lineChart').toDataURL("image/png").split(',')[1];
+        const suggestion = document.getElementById("suggestionText").textContent;
 
         // 判斷是否有 <select id="patientSelect"> 元素
         const select = document.getElementById("patientSelect");
@@ -178,7 +207,8 @@
         // 組成要送到後端的資料
         const payload = {
             pie_image: `data:image/png;base64,${pieBase64}`,
-            line_image: `data:image/png;base64,${lineBase64}`
+            line_image: `data:image/png;base64,${lineBase64}`,
+            suggestion: suggestion
         };
         if (patientName) {
             payload.patient_name = patientName;
@@ -266,7 +296,7 @@
                 labels: result.line_chart.map((_, i) => `第${i + 1}段`),
                 datasets: [{
                     label: '情緒走勢',
-                    data: result.line_chart.map(label => result.pie_chart[label] || 0),
+                    data: result.line_chart,
                     fill: false,
                     borderColor: '#2a5dba',
                     tension: 0.2
@@ -275,7 +305,25 @@
             const lineBase64 = document.getElementById('lineChart').toDataURL("image/png");
             lineChartInstance = new Chart(document.getElementById('lineChart'), {
                 type: 'line',
-                data: lineData
+                data: lineData,
+                options: {
+                    scales: {
+                        y: {
+                            type: 'category',
+                            labels: Object.keys(result.pie_chart), // 或你可以硬編寫死：['ang', 'dis', ...]
+                            title: {
+                                display: true,
+                                text: '情緒'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '段落'
+                            }
+                        }
+                    }
+                }
             });
 
             // 呼叫後端 /suggestion 取得建議文字
@@ -292,12 +340,10 @@
 
             if (suggestResponse.ok) {
                 const suggestData = await suggestResponse.json();
-                document.getElementById('suggestionText').textContent = suggestData.suggestion;
+                document.getElementById('suggestionText').innerHTML = suggestData.suggestion.replace(/\n/g, "<br>");
             } else {
                 document.getElementById('box3').textContent = "無法取得建議，請稍後再試。";
             }
-            resultElement.textContent = `情緒預測結果：`;
-            resultElement.style.color = 'blue';
 
         } catch (err) {
             console.error('上傳錯誤', err);
