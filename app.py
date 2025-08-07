@@ -15,10 +15,11 @@ from weasyprint import HTML
 import json
 
 # 文字建議 gemini
-from gemini import generate_response
+from Phi_3mini import generate_response
 
 # 初始化 Flask 應用
 app = Flask(__name__)
+
 
 # 設定密鑰和資料庫
 app.secret_key = 'supersecretkey'
@@ -443,17 +444,23 @@ def suggestion():
     line_series = data.get("line_series", [])      # 折線圖情緒序列
 
     # 組合 prompt 給 Gemini
-    prompt = f"""
-根據以下語音情緒分析結果，請以專業溫和語氣給出簡單明確的建議文字（1-2 句），並且列點給出三或四個可以舒緩這些情緒的方式，
-不要用 markdown 的格式(就是不要有 * 這個符號)，每次列點都要幫我直接換行：
-- 整體情緒分佈：{json.dumps(emotion_stats, ensure_ascii=False)}
-- 時間序列情緒變化：{line_series}
+    prompt = [
+        {"role": "system", "content": "你是一位溫和專業的心理諮商師。請你依照使用者提供的語音情緒分析結果，給出具體建議與情緒調節方法。"},
+        {"role": "user", "content": (
+            f"以下是語音情緒分析的結果：\n"
+            f"情緒分佈為：{json.dumps(emotion_stats, ensure_ascii=False)}\n"
+            f"時間序列為：{line_series}\n"
+            "請用一段簡潔的建議語句（1-2 句），並列出 3–4 個實用的情緒調節方式。\n"
+            "不要重複列出統計數據，只需針對情緒提出具體建議。"
+        )}
+    ]
 
-請勿重複數據內容，回傳純建議。
-"""
 
     suggestion_text = generate_response(prompt)
+    
+    print("=== 模型產出內容如下 ===")
     print(suggestion_text)
+    print("=======================")
     return jsonify({"suggestion": suggestion_text})
 
 if __name__ == "__main__":
