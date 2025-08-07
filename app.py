@@ -72,20 +72,20 @@ class EmotionAnalyzer:
         hop_length = 128
 
         mfcc = librosa.feature.mfcc(y=y, sr=self.sr, n_mfcc=15, n_fft=n_fft, hop_length=hop_length)
-        delta_mfcc = librosa.feature.delta(mfcc, order=1)
-        delta2_mfcc = librosa.feature.delta(mfcc, order=2)
-        chroma = librosa.feature.chroma_stft(y=y, sr=self.sr, n_fft=n_fft, hop_length=hop_length)
-        contrast = librosa.feature.spectral_contrast(y=y, sr=self.sr, n_fft=n_fft, hop_length=hop_length)
+        delta_mfcc = librosa.feature.delta(mfcc)
+        log_mel = librosa.power_to_db(librosa.feature.melspectrogram(y=y, sr=self.sr, n_fft=n_fft, hop_length=hop_length, n_mels=64))
+        rms = librosa.feature.rms(y=y, frame_length=n_fft, hop_length=hop_length)
+        zcr = librosa.feature.zero_crossing_rate(y, frame_length=n_fft, hop_length=hop_length)
 
-        min_frames = min(mfcc.shape[1], delta_mfcc.shape[1], delta2_mfcc.shape[1], chroma.shape[1], contrast.shape[1])
-
+        min_frames = min(mfcc.shape[1], delta_mfcc.shape[1], log_mel.shape[1], rms.shape[1], zcr.shape[1])
+        
         # 裁切時間軸長度一致
         features = np.vstack([
             mfcc[:, :min_frames],
             delta_mfcc[:, :min_frames],
-            delta2_mfcc[:, :min_frames],
-            chroma[:, :min_frames],
-            contrast[:, :min_frames],
+            log_mel[:, :min_frames],
+            rms[:, :min_frames],
+            zcr[:, :min_frames]
         ])
 
         # 統一長度
