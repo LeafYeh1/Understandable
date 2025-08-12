@@ -16,7 +16,8 @@ import json
 import whisper
 
 # 文字建議 gemini
-from Phi_3mini import generate_response
+from Qwen import local_llm_generate
+import json as pyjson 
 
 # 初始化 Flask 應用
 app = Flask(__name__)
@@ -478,31 +479,27 @@ def suggestion():
     line_series = data.get("line_series", [])      # 折線圖情緒序列
     transcript = data.get("transcript") or session.get("last_transcript", "")
     
-    # 組合 prompt 給 Gemini
-    prompt = [
-        {"role": "system", "content": "你是一位心理諮商師，請根據使用者情緒給出建議與舒緩方式，請使用繁體中文、自然口吻，先是一句話建議，再列點具體方法。"},
-        {"role": "user", "content": (
-            "情緒分布：{'sad': 4, 'ang': 3, 'happy': 0}\n"
-            "時間序列：['sad', 'sad', 'ang', 'ang', 'sad']\n"
-            "請給出建議與方法。"
-        )},
-        {"role": "assistant", "content": (
-            "你可能正經歷負面情緒，試著溫柔地照顧自己的內在。\n"
-            "舒緩方式：\n"
-            "1. 嘗試冥想或靜坐 5 分鐘\n"
-            "2. 書寫當下感受與想法\n"
-            "3. 聆聽放鬆音樂\n"
-            "4. 與親近的人談談心情"
-        )},
-        {"role": "user", "content": (
-            f"情緒分布：{json.dumps(emotion_stats, ensure_ascii=False)}\n"
-            f"時間序列：{line_series}\n"
-            f"語音轉文字（摘要）：{transcript}\n"
-            "請給出建議與方法。"
-        )}
-    ]
+    # 避免過長：可視需要截斷
+    def shorten(txt, max_chars=800):
+        return (txt[:max_chars] + "…") if txt and len(txt) > max_chars else (txt or "")
 
-    suggestion_text = generate_response(prompt)
+    transcript_short = shorten(transcript, 800)
+
+    # 用單一大 prompt（/api/generate 比較合適）
+    prompt = (
+        "你是一位心理諮商師，請用繁體中文回覆：\n"
+        "任務：根據使用者的情緒統計、時間序列，以及語音轉文字摘要，"
+        "先提供 1 句同理且務實的建議，再列出 3–4 點具體、可執行的調節方法。\n\n"
+        f"【情緒分布】{pyjson.dumps(emotion_stats, ensure_ascii=False)}\n"
+        f"【時間序列】{line_series}\n"
+        f"【語音轉文字（摘要）】{transcript_short}\n\n"
+        "請注意：\n"
+        "1) 口吻自然、友善、非醫療診斷。\n"
+        "2) 方法務實清楚，避免空泛敘述。\n"
+        "3) 若資訊不足，也要先表達理解再給通用建議。\n"
+    )
+
+    suggestion_text = local_llm_generate(prompt, num_ctx=2048, temperature=0.6) or "（暫無建議，請稍後再試）"
     
     print("=== 模型產出內容如下 ===")
     print(suggestion_text)
