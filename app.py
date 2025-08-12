@@ -12,7 +12,6 @@ from io import BytesIO
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from weasyprint import HTML
-import json
 import whisper
 
 # 文字建議 gemini
