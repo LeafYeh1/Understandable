@@ -13,6 +13,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from weasyprint import HTML
 import json
+import whisper
 
 # 文字建議 gemini
 from Phi_3mini import generate_response
@@ -20,6 +21,8 @@ from Phi_3mini import generate_response
 # 初始化 Flask 應用
 app = Flask(__name__)
 
+# 初始化 Whisper 模型（可選 tiny, base, small, medium, large）
+whisper_model = whisper.load_model("small")
 
 # 設定密鑰和資料庫
 app.secret_key = 'supersecretkey'
@@ -430,11 +433,42 @@ def predict():
         # 直接從記憶體處理檔案，不儲存到硬碟
         file_stream = BytesIO(file.read())
 
+    # ===== Whisper（純記憶體）=====
+    transcript_text = ""
+    try:
+        file_stream.seek(0)  # very important：把指標拉回開頭
+        # 直接用 librosa 從記憶體載入為 16kHz、單聲道的 float32 numpy
+        y, sr = librosa.load(file_stream, sr=16000, mono=True)
+
+        # 第一次先假設中文，失敗就自動偵測重試
+        asr_result = whisper_model.transcribe(
+            y, language="zh", fp16=False, condition_on_previous_text=False
+        )
+        transcript_text = (asr_result.get("text") or "").strip()
+        if not transcript_text:
+            asr_result = whisper_model.transcribe(
+                y, fp16=False, condition_on_previous_text=False
+            )
+        transcript_text = (asr_result.get("text") or "").strip()
+
+        print("=== Whisper 語音轉文字結果 ===")
+        print(repr(transcript_text))
+        print("===========================")
+        # 存在 session，讓 suggestion() 可直接取用        
+        session["last_transcript"] = transcript_text
+        
+    except Exception as e:
+        print(f"[Whisper] 轉文字失敗：{e}")
+        session["last_transcript"] = ""
+        
+    # ============================
+    
     pie_chart, line_chart = analyzer.analyze(file_stream)
 
     return jsonify({
         "pie_chart": pie_chart,
-        "line_chart": line_chart
+        "line_chart": line_chart,
+        "transcript": transcript_text
     }), 200
 
 @app.route("/suggestion", methods=["POST"])
@@ -442,19 +476,31 @@ def suggestion():
     data = request.get_json()
     emotion_stats = data.get("emotion_stats", {})  # pie_chart 統計資料
     line_series = data.get("line_series", [])      # 折線圖情緒序列
-
+    transcript = data.get("transcript") or session.get("last_transcript", "")
+    
     # 組合 prompt 給 Gemini
     prompt = [
-        {"role": "system", "content": "你是一位溫和專業的心理諮商師。請你依照使用者提供的語音情緒分析結果，給出具體建議與情緒調節方法。"},
+        {"role": "system", "content": "你是一位心理諮商師，請根據使用者情緒給出建議與舒緩方式，請使用繁體中文、自然口吻，先是一句話建議，再列點具體方法。"},
         {"role": "user", "content": (
-            f"以下是語音情緒分析的結果：\n"
-            f"情緒分佈為：{json.dumps(emotion_stats, ensure_ascii=False)}\n"
-            f"時間序列為：{line_series}\n"
-            "請用一段簡潔的建議語句（1-2 句），並列出 3–4 個實用的情緒調節方式。\n"
-            "不要重複列出統計數據，只需針對情緒提出具體建議。"
+            "情緒分布：{'sad': 4, 'ang': 3, 'happy': 0}\n"
+            "時間序列：['sad', 'sad', 'ang', 'ang', 'sad']\n"
+            "請給出建議與方法。"
+        )},
+        {"role": "assistant", "content": (
+            "你可能正經歷負面情緒，試著溫柔地照顧自己的內在。\n"
+            "舒緩方式：\n"
+            "1. 嘗試冥想或靜坐 5 分鐘\n"
+            "2. 書寫當下感受與想法\n"
+            "3. 聆聽放鬆音樂\n"
+            "4. 與親近的人談談心情"
+        )},
+        {"role": "user", "content": (
+            f"情緒分布：{json.dumps(emotion_stats, ensure_ascii=False)}\n"
+            f"時間序列：{line_series}\n"
+            f"語音轉文字（摘要）：{transcript}\n"
+            "請給出建議與方法。"
         )}
     ]
-
 
     suggestion_text = generate_response(prompt)
     
