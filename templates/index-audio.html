@@ -276,10 +276,20 @@
             });
             const result = await response.json();
 
+            //顯示中文情緒
+                const emotionMap = {
+                    happy: "開心",
+                    neu: "中性",
+                    sad: "傷心",
+                    fear: "害怕",
+                    dis: "厭惡",
+                    ang: "生氣"
+                };
+                
             // 顯示結果到框中
             // 顯示餅圖
             const pieData = {
-                labels: Object.keys(result.pie_chart),
+                labels: Object.keys(result.pie_chart).map(e => emotionMap[e]), // 中文標籤
                 datasets: [{
                     label: '情緒分布',
                     data: Object.values(result.pie_chart),
@@ -293,18 +303,18 @@
                 type: 'pie',
                 data: pieData
             });
-
-            // 顯示折線圖
-            const lineData = {
-                labels: result.line_chart.map((_, i) => `第${i + 1}段`),
-                datasets: [{
-                    label: '情緒走勢',
-                    data: result.line_chart,
-                    fill: false,
-                    borderColor: '#2a5dba',
-                    tension: 0.2
-                }]
-            };
+                
+                // 顯示折線圖
+                const lineData = {
+                    labels: result.line_chart.map((_, i) => `第${i + 1}段`),
+                    datasets: [{
+                        label: '情緒走勢',
+                        data: result.line_chart.map(e => emotionMap[e]),
+                        fill: false,
+                        borderColor: '#2a5dba',
+                        tension: 0.2
+                    }]
+                };
             const lineBase64 = document.getElementById('lineChart').toDataURL("image/png");
             lineChartInstance = new Chart(document.getElementById('lineChart'), {
                 type: 'line',
@@ -313,10 +323,18 @@
                     scales: {
                         y: {
                             type: 'category',
-                            labels: Object.keys(result.pie_chart), // 或你可以硬編寫死：['ang', 'dis', ...]
+                            labels: ['生氣', '厭惡', '害怕', '傷心', '中性', '開心'],
                             title: {
                                 display: true,
                                 text: '情緒'
+                            },
+                            grid: {
+                                lineWidth: ctx => {
+                                    return ctx.tick?.label === '中性' ? 4 : 1; // 中性加粗
+                                },
+                                color: ctx => {
+                                    return ctx.tick?.label === '中性' ? '#7B7B7B' : '#e0e0e0'; // 中性線深灰色，其它淺灰
+                                }
                             }
                         },
                         x: {
