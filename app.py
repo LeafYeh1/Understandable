@@ -480,7 +480,7 @@ def generate_report():
         </div>
         <div class="section">
             <h3>情緒圓餅圖</h3>
-            <img src="{data.get('pie_image')}" width="300">
+            <img src="{data.get('pie_image')}" style="width:300px; height:auto; display:block; margin:auto;">
          </div>
         <div class="section">
             <h3>時間序列折線圖</h3>
