@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>聊天紀錄</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .chat-app {
+      width: 900px;
+      height: 600px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      overflow: hidden;
+    }
+    /* 左側日期清單 */
+    .chat-list {
+      width: 250px;
+      border-right: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      background: #fafafa;
+    }
+    .chat-list-header {
+      background: #4a76a8;
+      color: #fff;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .chat-item {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+    .chat-item:hover {
+      background: #eaeaea;
+    }
+    .chat-item.active {
+      background: #dbe7f4;
+    }
+    /* 右側聊天內容 */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-header {
+      background: #4a76a8;
+      color: #fff;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .chat-messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    .message {
+      margin: 8px 0;
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 70%;
+      word-wrap: break-word;
+      clear: both;
+    }
+    .message.user {
+      background: #dcf8c6;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    .message.system {
+      background: #f1f0f0;
+      align-self: flex-start;
+      margin-right: auto;
+    }
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+    .chat-input input {
+      flex: 1;
+      border: none;
+      padding: 15px;
+      font-size: 16px;
+      outline: none;
+    }
+    .chat-input button {
+      background: #4a76a8;
+      color: #fff;
+      border: none;
+      padding: 0 20px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .chat-input button:hover {
+      background: #3b5f85;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-app">
+    <!-- 左側日期紀錄 -->
+    <div class="chat-list">
+      <div class="chat-list-header">紀錄日期</div>
+      <div class="chat-item active" onclick="switchChat('2025-09-01')">2025-09-01</div>
+      <div class="chat-item" onclick="switchChat('2025-09-05')">2025-09-05</div>
+      <div class="chat-item" onclick="switchChat('2025-09-10')">2025-09-10</div>
+    </div>
+
+    <!-- 右側聊天內容 -->
+    <div class="chat-container">
+      <div class="chat-header" id="chatHeader">2025-09-01</div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="輸入訊息...">
+        <button onclick="sendMessage()">送出</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chatMessages = document.getElementById("chatMessages");
+    const chatInput = document.getElementById("chatInput");
+    const chatHeader = document.getElementById("chatHeader");
+
+    // 假資料：各日期的紀錄
+    const records = {
+      "2025-09-01": [
+        { text: "早上起床吃早餐", sender: "system" }
+      ],
+      "2025-09-05": [
+        { text: "今天加班到很晚", sender: "system" }
+      ],
+      "2025-09-10": [
+        { text: "朋友來家裡玩", sender: "system" }
+      ]
+    };
+
+    let currentDate = "2025-09-01";
+
+    function switchChat(date) {
+      currentDate = date;
+      chatHeader.innerText = date;
+
+      // 更新 active 樣式
+      document.querySelectorAll(".chat-item").forEach(item => item.classList.remove("active"));
+      document.querySelector(`.chat-item[onclick="switchChat('${date}')"]`).classList.add("active");
+
+      renderMessages();
+    }
+
+    function sendMessage() {
+      const text = chatInput.value.trim();
+      if (text === "") return;
+
+      // 新增訊息到該日期
+      if (!records[currentDate]) {
+        records[currentDate] = [];
+      }
+      records[currentDate].push({ text, sender: "user" });
+
+      chatInput.value = "";
+      renderMessages();
+    }
+
+    function renderMessages() {
+      chatMessages.innerHTML = "";
+      if (records[currentDate]) {
+        records[currentDate].forEach(msg => {
+          const msgDiv = document.createElement("div");
+          msgDiv.classList.add("message", msg.sender);
+          msgDiv.innerText = msg.text;
+          chatMessages.appendChild(msgDiv);
+        });
+      } else {
+        chatMessages.innerHTML = "<p>尚無紀錄</p>";
+      }
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Enter 鍵送出
+    chatInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    // 初始渲染
+    renderMessages();
+  </script>
+</body>
+</html>
