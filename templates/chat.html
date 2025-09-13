@@ -208,7 +208,8 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
-          history: records[currentDate]  // 傳送當天所有訊息
+          history: records[currentDate],  // 傳送當天所有訊息
+          date: currentDate
         })
       })
       .then(res => res.json())

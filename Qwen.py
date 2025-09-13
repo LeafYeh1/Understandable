@@ -3,7 +3,7 @@ import requests
 import json as pyjson  
 
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:3b-instruct")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma:2b")
 
 def local_llm_generate(prompt: str, num_ctx: int = 2048, temperature: float = 0.7, timeout: int = 120) -> str:
     """

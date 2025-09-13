@@ -13,6 +13,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from weasyprint import HTML
 import whisper # 語音轉文字
+import re
 
 # 文字建議 gemini
 from Qwen import local_llm_generate
@@ -473,6 +474,7 @@ def chat_ai():
     data = request.get_json()
     user_msg = data.get("message", "")
     history = data.get("history", [])
+    date = data.get("date")
     if not user_msg:
         return jsonify({"reply": "請輸入訊息"}), 400
 
@@ -504,7 +506,8 @@ def chat_ai():
     print("======================")
     
     # 存進資料庫
-    date = history[-1]["time"].split(":")[0] if history else datetime.now().strftime("%Y-%m-%d")
+    if not date or not re.match(r"^\d{4}-\d{2}-\d{2}$", str(date)):
+        date = datetime.now().strftime("%Y-%m-%d")
     time = datetime.now().strftime("%H:%M")
     user_id = session.get("user_id")
     db.session.add(ChatRecord(user_id=user_id, date=date, sender="user", text=user_msg, time=time))
