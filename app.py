@@ -448,6 +448,15 @@ def add_patient():
 
     return render_template("add_patient.html")
 
+# 使用者專屬聊天室頁面
+@app.route("/chat", methods=["GET", "POST"])
+def chat():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    user = db.session.get(User, session["user_id"])
+    role = session.get("role", None)
+    return render_template("chat.html", user=user, role=role)
+
 # 產出文件報告
 @app.route("/generate_report", methods=["POST"])
 def generate_report():
