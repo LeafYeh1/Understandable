@@ -17,6 +17,7 @@ import whisper # 語音轉文字
 # 文字建議 gemini
 from Qwen import local_llm_generate
 import json as pyjson 
+import sys
 
 # 高效音訊讀取
 import soundfile as sf
@@ -25,6 +26,8 @@ import io
 
 # 初始化 Flask 應用
 app = Flask(__name__)
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # 初始化 Whisper 模型（可選 tiny, base, small, medium, large）
 whisper_model = whisper.load_model("small")
@@ -483,7 +486,10 @@ def chat_ai():
     for msg in history:
         role = "你" if msg["sender"] == "user" else "AI"
         context += f"{role}: {msg['text']}\n"
-    prompt = f"{context}你: {user_msg}\nAI:"
+    prompt = (
+    "你是一個友善的聊天助手，請務必使用繁體中文回答。\n\n"
+    f"{context}你: {user_msg}\nAI:"
+)
 
     # 印出 prompt
     print("=== chat_ai 組成的 prompt ===")
