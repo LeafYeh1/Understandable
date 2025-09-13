@@ -294,7 +294,7 @@
             // 把前端的圖表轉成 base64
             const pieBase64 = document.getElementById('pieChart').toDataURL("image/png").split(',')[1];
             const lineBase64 = document.getElementById('lineChart').toDataURL("image/png").split(',')[1];
-            const suggestion = document.getElementById("suggestionText").textContent;
+            const suggestion = document.getElementById("suggestionText").innerHTML;
             // 判斷是否有 <select id="patientSelect"> 元素
             const select = document.getElementById("patientSelect");
             const patientName = select ? select.value : null;

@@ -453,7 +453,8 @@ def add_patient():
 def generate_report():
     data = request.json
     patient_name = data.get("patient_name", "Unknown")
-    suggestion = data.get("suggestion", "無建議內容。")
+    suggestion_html = data.get("suggestion", "無建議內容。")
+    
     role = session.get("role", None)
 
     if role == "counselor":
@@ -488,7 +489,7 @@ def generate_report():
         </div>
         <div class="section">
             <h3>情緒建議</h3>
-            <p>{suggestion}</p>
+            <p>{suggestion_html}</p>
         </div>
     </body></html>
     """
