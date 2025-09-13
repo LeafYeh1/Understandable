@@ -457,6 +457,16 @@ def chat():
     role = session.get("role", None)
     return render_template("chat.html", user=user, role=role)
 
+@app.route("/chat_ai", methods=["POST"])
+def chat_ai():
+    data = request.get_json()
+    user_msg = data.get("message", "")
+    if not user_msg:
+        return jsonify({"reply": "請輸入訊息"}), 400
+    # 呼叫 Qwen
+    reply = local_llm_generate(user_msg, num_ctx=1024, temperature=0.7)
+    return jsonify({"reply": reply})
+
 # 產出文件報告
 @app.route("/generate_report", methods=["POST"])
 def generate_report():

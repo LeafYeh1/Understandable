@@ -173,6 +173,20 @@
 
       chatInput.value = "";
       renderMessages();
+
+      // 呼叫後端 Qwen 取得 AI 回覆  新加的
+      fetch("/chat_ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.reply) {
+          records[currentDate].push({ text: data.reply, sender: "ai" });
+          renderMessages();
+        }
+      });
     }
 
     function renderMessages() {
@@ -181,6 +195,11 @@
         records[currentDate].forEach(msg => {
           const msgDiv = document.createElement("div");
           msgDiv.classList.add("message", msg.sender);
+          // AI訊息用不同背景
+          if (msg.sender === "ai") {
+            msgDiv.style.background = "#ffe6b3";
+            msgDiv.style.alignSelf = "flex-start";
+          }
           msgDiv.innerText = msg.text;
           chatMessages.appendChild(msgDiv);
         });
