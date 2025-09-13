@@ -162,7 +162,13 @@
       const selected = document.querySelector(`.chat-item[data-date="${date}"]`);
       if (selected) selected.classList.add("active");
 
-      renderMessages();
+      // 向後端撈取該日期紀錄
+      fetch(`/chat_history?date=${date}`)
+        .then(res => res.json())
+        .then(data => {
+          records[date] = data.history || [];
+          renderMessages();
+        });
     }
 
     function sendMessage() {
@@ -194,7 +200,10 @@
       fetch("/chat_ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({
+          message: text,
+          history: records[currentDate]  // 傳送當天所有訊息
+        })
       })
       .then(res => res.json())
       .then(data => {
@@ -238,6 +247,14 @@
         sendMessage();
       }
     });
+
+    // 一載入就撈所有有紀錄的日期
+    fetch("/chat_dates")
+      .then(res => res.json())
+      .then(data => {
+        data.dates.forEach(addDateToList);
+      });
+      
   </script>
 </body>
 </html>

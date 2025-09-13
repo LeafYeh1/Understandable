@@ -65,6 +65,14 @@ class Report(db.Model):
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id')) # UID
     patient = db.relationship('Patient', backref=db.backref('reports', lazy=True))
 
+class ChatRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    date = db.Column(db.String(20))  # YYYY-MM-DD
+    sender = db.Column(db.String(10))  # "user" or "ai"
+    text = db.Column(db.Text)
+    time = db.Column(db.String(10))   # HH:MM
+    
 def decode_audio_to_16k_mono(file_bytes: io.BytesIO, filename: str | None = None):
     """
     優先用 soundfile 一次讀 → 轉單聲道 → 16k。
@@ -461,11 +469,57 @@ def chat():
 def chat_ai():
     data = request.get_json()
     user_msg = data.get("message", "")
+    history = data.get("history", [])
     if not user_msg:
         return jsonify({"reply": "請輸入訊息"}), 400
-    # 呼叫 Qwen
-    reply = local_llm_generate(user_msg, num_ctx=1024, temperature=0.7)
+
+    # 印出收到的 history
+    print("=== chat_ai 收到的 history ===")
+    print(history)
+    print("=============================")
+
+    # 組成上下文 prompt
+    context = ""
+    for msg in history:
+        role = "你" if msg["sender"] == "user" else "AI"
+        context += f"{role}: {msg['text']}\n"
+    prompt = f"{context}你: {user_msg}\nAI:"
+
+    # 印出 prompt
+    print("=== chat_ai 組成的 prompt ===")
+    print(prompt)
+    print("============================")
+
+    reply = local_llm_generate(prompt, num_ctx=1024, temperature=0.7)
+
+    # 印出 AI 回覆
+    print("=== chat_ai AI 回覆 ===")
+    print(reply)
+    print("======================")
+    
+    # 存進資料庫
+    date = history[-1]["time"].split(":")[0] if history else datetime.now().strftime("%Y-%m-%d")
+    time = datetime.now().strftime("%H:%M")
+    user_id = session.get("user_id")
+    db.session.add(ChatRecord(user_id=user_id, date=date, sender="user", text=user_msg, time=time))
+    db.session.add(ChatRecord(user_id=user_id, date=date, sender="ai", text=reply, time=time))
+    db.session.commit()
+
     return jsonify({"reply": reply})
+
+@app.route("/chat_history", methods=["GET"])
+def chat_history():
+    date = request.args.get("date")
+    user_id = session.get("user_id")
+    records = ChatRecord.query.filter_by(user_id=user_id, date=date).all()
+    out = [{"text": r.text, "sender": r.sender, "time": r.time} for r in records]
+    return jsonify({"history": out})
+
+@app.route("/chat_dates")
+def chat_dates():
+    user_id = session.get("user_id")
+    dates = db.session.query(ChatRecord.date).filter_by(user_id=user_id).distinct().all()
+    return jsonify({"dates": [d[0] for d in dates]})
 
 # 產出文件報告
 @app.route("/generate_report", methods=["POST"])
