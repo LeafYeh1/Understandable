@@ -255,18 +255,29 @@
     deleteBtn.innerText = "✕";
     deleteBtn.classList.add("delete-date-btn");
     deleteBtn.onclick = (e) => {
-        e.stopPropagation(); // 避免同時觸發切換聊天
-        if (confirm(`確定要刪除 ${date} 的聊天紀錄嗎？`)) {
-        delete records[date]; // 刪除紀錄
-        item.remove(); // 移除清單項目
-
-        // 如果當前正在瀏覽被刪掉的日期，清空右側
-        if (currentDate === date) {
-            currentDate = null;
-            chatHeader.innerText = "尚未選擇日期";
-            chatMessages.innerHTML = "<p>尚無紀錄</p>";
-        }
-        }
+      e.stopPropagation();
+      if (confirm(`確定要刪除 ${date} 的聊天紀錄嗎？`)) {
+        // 呼叫後端刪除 API
+        fetch("/delete_chat_date", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date })
+        })
+        .then(res => res.json())
+        .then(result => {
+          if (result.success) {
+            delete records[date];
+            item.remove();
+            if (currentDate === date) {
+              currentDate = null;
+              chatHeader.innerText = "尚未選擇日期";
+              chatMessages.innerHTML = "<p>尚無紀錄</p>";
+            }
+          } else {
+            alert("刪除失敗：" + (result.error || ""));
+          }
+        });
+      }
     };
 
     // 包裝

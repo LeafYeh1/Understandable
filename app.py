@@ -530,6 +530,16 @@ def chat_dates():
     dates = db.session.query(ChatRecord.date).filter_by(user_id=user_id).distinct().all()
     return jsonify({"dates": [d[0] for d in dates]})
 
+@app.route("/delete_chat_date", methods=["POST"])
+def delete_chat_date():
+    data = request.get_json()
+    date = data.get("date")
+    user_id = session.get("user_id")
+    if not date or not user_id:
+        return jsonify({"success": False, "error": "缺少日期或未登入"}), 400
+    ChatRecord.query.filter_by(user_id=user_id, date=date).delete()
+    db.session.commit()
+    return jsonify({"success": True})
 # 產出文件報告
 @app.route("/generate_report", methods=["POST"])
 def generate_report():
