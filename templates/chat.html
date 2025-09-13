@@ -79,6 +79,17 @@
       align-self: flex-end;
       margin-left: auto;
     }
+    .message.ai {
+      background: #ffe6b3;
+      align-self: flex-start;
+    }
+    .timestamp {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+      text-align: right;
+    }
     .chat-input {
       display: flex;
       border-top: 1px solid #ddd;
@@ -137,6 +148,11 @@
       return today.toISOString().split("T")[0]; // YYYY-MM-DD
     }
 
+    function getCurrentTime() {
+      const now = new Date();
+      return now.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+    }
+
     function switchChat(date) {
       currentDate = date;
       chatHeader.innerText = date;
@@ -165,16 +181,16 @@
         switchChat(currentDate);
       }
 
-      // 新增訊息到當天紀錄
+      // 新增使用者訊息
       if (!records[currentDate]) {
         records[currentDate] = [];
       }
-      records[currentDate].push({ text, sender: "user" });
+      records[currentDate].push({ text, sender: "user", time: getCurrentTime() });
 
       chatInput.value = "";
       renderMessages();
 
-      // 呼叫後端 Qwen 取得 AI 回覆  新加的
+      // 呼叫後端 AI 回覆
       fetch("/chat_ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -183,7 +199,7 @@
       .then(res => res.json())
       .then(data => {
         if (data.reply) {
-          records[currentDate].push({ text: data.reply, sender: "ai" });
+          records[currentDate].push({ text: data.reply, sender: "ai", time: getCurrentTime() });
           renderMessages();
         }
       });
@@ -195,12 +211,10 @@
         records[currentDate].forEach(msg => {
           const msgDiv = document.createElement("div");
           msgDiv.classList.add("message", msg.sender);
-          // AI訊息用不同背景
-          if (msg.sender === "ai") {
-            msgDiv.style.background = "#ffe6b3";
-            msgDiv.style.alignSelf = "flex-start";
-          }
-          msgDiv.innerText = msg.text;
+          msgDiv.innerHTML = `
+            <div>${msg.text}</div>
+            <span class="timestamp">${msg.time}</span>
+          `;
           chatMessages.appendChild(msgDiv);
         });
       } else {
@@ -227,4 +241,3 @@
   </script>
 </body>
 </html>
-
