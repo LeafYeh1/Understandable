@@ -79,11 +79,6 @@
       align-self: flex-end;
       margin-left: auto;
     }
-    .message.system {
-      background: #f1f0f0;
-      align-self: flex-start;
-      margin-right: auto;
-    }
     .chat-input {
       display: flex;
       border-top: 1px solid #ddd;
@@ -113,14 +108,12 @@
     <!-- 左側日期紀錄 -->
     <div class="chat-list">
       <div class="chat-list-header">紀錄日期</div>
-      <div class="chat-item active" onclick="switchChat('2025-09-01')">2025-09-01</div>
-      <div class="chat-item" onclick="switchChat('2025-09-05')">2025-09-05</div>
-      <div class="chat-item" onclick="switchChat('2025-09-10')">2025-09-10</div>
+      <div id="dateList"></div>
     </div>
 
     <!-- 右側聊天內容 -->
     <div class="chat-container">
-      <div class="chat-header" id="chatHeader">2025-09-01</div>
+      <div class="chat-header" id="chatHeader">尚未選擇日期</div>
       <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-input">
         <input type="text" id="chatInput" placeholder="輸入訊息...">
@@ -133,21 +126,16 @@
     const chatMessages = document.getElementById("chatMessages");
     const chatInput = document.getElementById("chatInput");
     const chatHeader = document.getElementById("chatHeader");
+    const dateList = document.getElementById("dateList");
 
-    // 假資料：各日期的紀錄
-    const records = {
-      "2025-09-01": [
-        { text: "早上起床吃早餐", sender: "system" }
-      ],
-      "2025-09-05": [
-        { text: "今天加班到很晚", sender: "system" }
-      ],
-      "2025-09-10": [
-        { text: "朋友來家裡玩", sender: "system" }
-      ]
-    };
+    // 紀錄物件：日期 → 訊息陣列
+    const records = {};
+    let currentDate = null;
 
-    let currentDate = "2025-09-01";
+    function getTodayDate() {
+      const today = new Date();
+      return today.toISOString().split("T")[0]; // YYYY-MM-DD
+    }
 
     function switchChat(date) {
       currentDate = date;
@@ -155,7 +143,8 @@
 
       // 更新 active 樣式
       document.querySelectorAll(".chat-item").forEach(item => item.classList.remove("active"));
-      document.querySelector(`.chat-item[onclick="switchChat('${date}')"]`).classList.add("active");
+      const selected = document.querySelector(`.chat-item[data-date="${date}"]`);
+      if (selected) selected.classList.add("active");
 
       renderMessages();
     }
@@ -164,7 +153,19 @@
       const text = chatInput.value.trim();
       if (text === "") return;
 
-      // 新增訊息到該日期
+      // 如果還沒選日期，自動用今天日期
+      if (!currentDate) {
+        currentDate = getTodayDate();
+
+        // 如果今天日期不存在於左側，新增
+        if (!records[currentDate]) {
+          records[currentDate] = [];
+          addDateToList(currentDate);
+        }
+        switchChat(currentDate);
+      }
+
+      // 新增訊息到當天紀錄
       if (!records[currentDate]) {
         records[currentDate] = [];
       }
@@ -189,15 +190,21 @@
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+    function addDateToList(date) {
+      const item = document.createElement("div");
+      item.classList.add("chat-item");
+      item.setAttribute("data-date", date);
+      item.innerText = date;
+      item.onclick = () => switchChat(date);
+      dateList.appendChild(item);
+    }
+
     // Enter 鍵送出
     chatInput.addEventListener("keydown", e => {
       if (e.key === "Enter") {
         sendMessage();
       }
     });
-
-    // 初始渲染
-    renderMessages();
   </script>
 </body>
 </html>
