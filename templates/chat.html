@@ -112,6 +112,12 @@
     .chat-input button:hover {
       background: #3b5f85;
     }
+    .delete-date-btn {
+    cursor: pointer;
+    color: red;
+    font-size: 14px;
+    margin-left: 8px;
+  }
   </style>
 </head>
 <body>
@@ -233,13 +239,45 @@
     }
 
     function addDateToList(date) {
-      const item = document.createElement("div");
-      item.classList.add("chat-item");
-      item.setAttribute("data-date", date);
-      item.innerText = date;
-      item.onclick = () => switchChat(date);
-      dateList.appendChild(item);
+    const item = document.createElement("div");
+    item.classList.add("chat-item");
+    item.setAttribute("data-date", date);
+
+    // 日期文字
+    const dateText = document.createElement("span");
+    dateText.innerText = date;
+    dateText.style.flex = "1";
+    dateText.onclick = () => switchChat(date);
+
+    // 刪除按鈕
+    const deleteBtn = document.createElement("span");
+    deleteBtn.innerText = "✕";
+    deleteBtn.classList.add("delete-date-btn");
+    deleteBtn.onclick = (e) => {
+        e.stopPropagation(); // 避免同時觸發切換聊天
+        if (confirm(`確定要刪除 ${date} 的聊天紀錄嗎？`)) {
+        delete records[date]; // 刪除紀錄
+        item.remove(); // 移除清單項目
+
+        // 如果當前正在瀏覽被刪掉的日期，清空右側
+        if (currentDate === date) {
+            currentDate = null;
+            chatHeader.innerText = "尚未選擇日期";
+            chatMessages.innerHTML = "<p>尚無紀錄</p>";
+        }
+        }
+    };
+
+    // 包裝
+    item.style.display = "flex";
+    item.style.justifyContent = "space-between";
+    item.style.alignItems = "center";
+
+    item.appendChild(dateText);
+    item.appendChild(deleteBtn);
+    dateList.appendChild(item);
     }
+
 
     // Enter 鍵送出
     chatInput.addEventListener("keydown", e => {
