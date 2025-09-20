@@ -1,10 +1,16 @@
-<h2>{{ patient.account }} 的聊天紀錄</h2>
-<table border="1">
-<tr><th>時間</th><th>角色</th><th>內容</th></tr>
+<h2 style="text-align: center;">{{ patient.account }} 的聊天紀錄</h2>
+<table border="1" style="background-color: #f0f8ff; border-collapse: collapse; width: 90%; margin: 0 auto; text-align: left;">
+<tr style="background-color: #87cefa;">
+  <th style="width: 15%; text-align: center;">日期</th>
+  <th style="width: 10%; text-align: center;">時間</th>
+  <th style="width: 5%; text-align: center;">角色</th>
+  <th style="width: 55%; text-align: center;">內容</th>
+</tr>
 {% for r in records %}
 <tr>
-  <td>{{ r.date }} {{ r.time }}</td>
-  <td>{{ '使用者' if r.sender=='user' else 'AI' }}</td>
+  <td style="text-align: center;">{{ r.date }}</td>
+  <td style="text-align: center;">{{ r.time }}</td>
+  <td style="text-align: center;">{{ '使用者' if r.sender=='user' else 'AI' }}</td>
   <td>{{ r.text }}</td>
 </tr>
 {% endfor %}
