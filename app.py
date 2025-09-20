@@ -316,21 +316,22 @@ def register_user():
         # 檢查是否重複帳號或 email
         if User.query.filter_by(account=account).first():
             flash("使用者名稱已被註冊")
-            return render_template("register.html")
+            return render_template("register.html", role="user")
+        
         if User.query.filter_by(email=email).first():
             flash("電子郵件已被註冊")
-            return render_template("register.html")
+            return render_template("register.html", role="user")
 
         # 密碼不一致
         if password != confirm_password:
             flash("兩次輸入的密碼不一致")
-            return render_template("register.html")
+            return render_template("register.html", role="user")
 
         # 密碼強度檢查（至少8字元，含大小寫與數字）
         import re
         if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$", password):
             flash("密碼需至少8位，包含大寫、小寫與數字")
-            return render_template("register.html")
+            return render_template("register.html", role="user")
 
         # 建立帳號
         hashed_pw = generate_password_hash(password)
@@ -343,9 +344,8 @@ def register_user():
         db.session.add(new_user)
         db.session.commit()
 
-        session["user_id"] = new_user.id
-        flash("註冊成功，歡迎使用！")
-        return redirect(url_for("home"))
+        flash("註冊成功，請登入。", "success")
+        return redirect(url_for("login_user"))
 
     return render_template("register.html", role="user")
 
@@ -361,21 +361,21 @@ def register_counselor():
         # 檢查是否重複帳號或 email
         if User.query.filter_by(account=account).first():
             flash("使用者名稱已被註冊")
-            return render_template("register.html")
+            return render_template("register.html", role="counselor")
         if User.query.filter_by(email=email).first():
             flash("電子郵件已被註冊")
-            return render_template("register.html")
+            return render_template("register.html", role="counselor")
 
         # 密碼不一致
         if password != confirm_password:
             flash("兩次輸入的密碼不一致")
-            return render_template("register.html")
+            return render_template("register.html", role="counselor")
 
         # 密碼強度檢查（至少8字元，含大小寫與數字）
         import re
         if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$", password):
             flash("密碼需至少8位，包含大寫、小寫與數字")
-            return render_template("register.html")
+            return render_template("register.html", role="counselor")
 
         # 建立帳號
         hashed_pw = generate_password_hash(password)
@@ -389,9 +389,8 @@ def register_counselor():
         db.session.add(new_user)
         db.session.commit()
 
-        session["user_id"] = new_user.id
-        flash("註冊成功，歡迎使用！")
-        return redirect(url_for("home"))
+        flash("註冊成功，請登入。", "success")
+        return redirect(url_for("login_counselor"))
     return render_template("register.html", role="counselor")
     
 # 前往首頁
@@ -540,6 +539,10 @@ def delete_chat_date():
     ChatRecord.query.filter_by(user_id=user_id, date=date).delete()
     db.session.commit()
     return jsonify({"success": True})
+
+# @app.route("patients_record", methods=["POST"])
+# def delete_chat_date():
+    
 # 產出文件報告
 @app.route("/generate_report", methods=["POST"])
 def generate_report():
