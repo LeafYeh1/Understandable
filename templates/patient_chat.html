@@ -1,0 +1,11 @@
+<h2>{{ patient.account }} 的聊天紀錄</h2>
+<table border="1">
+<tr><th>時間</th><th>角色</th><th>內容</th></tr>
+{% for r in records %}
+<tr>
+  <td>{{ r.date }} {{ r.time }}</td>
+  <td>{{ '使用者' if r.sender=='user' else 'AI' }}</td>
+  <td>{{ r.text }}</td>
+</tr>
+{% endfor %}
+</table>

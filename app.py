@@ -50,7 +50,8 @@ class User(db.Model):
     account = db.Column(db.String(100), nullable=False)
     clinic = db.Column(db.String(300))
     role = db.Column(db.String(20), nullable=False)  # 角色類型（counselor/user）
-
+    counselor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # 綁定諮商師
+    
 # 患者資料庫模板
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -434,6 +435,41 @@ def record():
     role = session.get("role", None)
     return render_template("index-audio.html", user=user, patients=patients, role=role)
 
+@app.route("/mycounselor", methods=["GET", "POST"])
+def my_counselor():
+    if "user_id" not in session:
+        return redirect(url_for("login_user"))
+    if session.get("role") != "user":
+        return redirect(url_for("home"))
+
+    user = User.query.get(session["user_id"])
+
+    if request.method == "POST":
+        counselor_name = request.form.get("counselor_name")  # 改抓名字
+        counselor = User.query.filter_by(account=counselor_name, role="counselor").first()
+        if counselor:
+            user.counselor_id = counselor.id
+            db.session.commit()
+            flash(f"已綁定諮商師：{counselor.account}")
+            return redirect(url_for("my_counselor"))
+        else:
+            flash("找不到此諮商師名稱")
+
+    # 取得所有諮商師清單
+    counselors = User.query.filter_by(role="counselor").all()
+
+    # 如果已經綁定，取得諮商師名稱
+    bound_counselor = None
+    if user.counselor_id:
+        bound_counselor = User.query.get(user.counselor_id)
+
+    return render_template(
+        "mycounselor.html",
+        user=user,
+        counselors=counselors,
+        bound_counselor=bound_counselor
+    )
+
 # 新增患者頁面
 @app.route("/patients/add", methods=["GET", "POST"])
 def add_patient():
@@ -540,8 +576,19 @@ def delete_chat_date():
     db.session.commit()
     return jsonify({"success": True})
 
-# @app.route("patients_record", methods=["POST"])
-# def delete_chat_date():
+
+@app.route("/patient_chat/<int:user_id>")
+def patient_chat(user_id):
+    if "user_id" not in session or session.get("role") != "counselor":
+        return redirect(url_for("login_counselor"))
+
+    # 確認這個 user_id 的患者真的屬於自己
+    patient = User.query.filter_by(id=user_id, role="user", counselor_id=session["user_id"]).first_or_404()
+
+    # 抓取他的聊天紀錄
+    records = ChatRecord.query.filter_by(user_id=user_id).order_by(ChatRecord.date, ChatRecord.time).all()
+
+    return render_template("patient_chat.html", patient=patient, records=records)
     
 # 產出文件報告
 @app.route("/generate_report", methods=["POST"])
@@ -679,17 +726,13 @@ def suggestion():
 
 @app.route("/patients_record")
 def patients_record():
-    if "user_id" not in session:
-        return redirect(url_for("login_counselor"))  # 或 login_user，看你的權限需求
+    if "user_id" not in session or session.get("role") != "counselor":
+        return redirect(url_for("login_counselor"))
 
-    # 取得該諮商師的患者列表
-    user = db.session.get(User, session["user_id"])
-    patients = Patient.query.filter_by(counselor_id=user.id).all()
-    
-    # 傳給模板 [(id, name), ...]
-    patient_list = [(p.id, p.name) for p in patients]
-    
-    return render_template("patients_record.html", patients=patient_list)
+    # 找到所有綁定自己的使用者
+    patients = User.query.filter_by(role="user", counselor_id=session["user_id"]).all()
+
+    return render_template("patients_record.html", patients=patients)
 
 @app.route("/get_dates/<int:user_id>")
 def get_dates(user_id):

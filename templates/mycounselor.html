@@ -1,0 +1,33 @@
+<h2>選擇我的諮商師</h2>
+
+<p>
+目前綁定的諮商師：
+{% if bound_counselor %}
+  <strong>{{ bound_counselor.account }}（{{ bound_counselor.clinic }}）</strong>
+{% else %}
+  尚未綁定
+{% endif %}
+</p>
+
+<form method="POST">
+  <label for="counselor_name">選擇諮商師：</label><br>
+  <select name="counselor_name" required>
+    {% for c in counselors %}
+      <option value="{{ c.account }}"
+        {% if bound_counselor and bound_counselor.account == c.account %}selected{% endif %}>
+        {{ c.account }}（{{ c.clinic }}）
+      </option>
+    {% endfor %}
+  </select><br><br>
+  <button type="submit">綁定</button>
+</form>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <ul>
+        {% for msg in messages %}
+            <li>{{ msg }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
