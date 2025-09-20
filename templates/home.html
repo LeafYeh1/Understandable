@@ -110,6 +110,12 @@
                 <h3>我的天地</h3>
             </a>
             {% endif %}
+            {% if role == "counselor" %}
+                <a href="/patients_record" class="option-box">
+                <i class="fas fa-notes-medical"></i>
+                <h3>患者紀錄</h3>
+                </a>
+            {% endif %}
         </div>
         <div style="text-align:center;">
             <a href="/logout" class="logout">登出</a>
