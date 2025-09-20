@@ -1,33 +1,148 @@
-<h2>選擇我的諮商師</h2>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>情有可原｜選擇我的諮商師</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #e8f1fc;
+      margin: 0;
+      padding: 40px;
+    }
+    h2 { color: #2a5dba; margin-top: 0; }
 
-<p>
-目前綁定的諮商師：
-{% if bound_counselor %}
-  <strong>{{ bound_counselor.account }}（{{ bound_counselor.clinic }}）</strong>
-{% else %}
-  尚未綁定
-{% endif %}
-</p>
+    /* 共用卡片樣式（沿用你的 .bottom-box 風格） */
+    .card {
+      width: 640px;
+      border: 2px solid #a3c0e9;
+      border-radius: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      padding: 18px 22px;
+      background-color: #ffffff;
+      margin: 30px auto;
+      text-align: left;
+    }
+    .card h3 {
+      margin: 6px 0 14px;
+      text-align: center;
+      color: #2a5dba;
+    }
 
-<form method="POST">
-  <label for="counselor_name">選擇諮商師：</label><br>
-  <select name="counselor_name" required>
-    {% for c in counselors %}
-      <option value="{{ c.account }}"
-        {% if bound_counselor and bound_counselor.account == c.account %}selected{% endif %}>
-        {{ c.account }}（{{ c.clinic }}）
-      </option>
-    {% endfor %}
-  </select><br><br>
-  <button type="submit">綁定</button>
-</form>
+    /* 表單元件 */
+    .form-row { margin: 12px 0; }
+    label { font-weight: bold; color: #333; }
+    select, button {
+      font-size: 16px;
+      border-radius: 8px;
+      border: 2px solid #a3c0e9;
+      padding: 10px 12px;
+      outline: none;
+    }
+    select {
+      width: 100%;
+      background: #fff;
+    }
 
-{% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <ul>
-        {% for msg in messages %}
-            <li>{{ msg }}</li>
-        {% endfor %}
-        </ul>
+    /* 主要按鈕 & 返回按鈕 */
+    .btn-primary, .btn-secondary {
+      border: none;
+      cursor: pointer;
+      color: #fff;
+      background-color: #2a5dba;
+      padding: 10px 20px;
+      margin: 8px 6px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .btn-secondary {
+      background-color: #2a5dba;
+    }
+    .btn-primary:hover, .btn-secondary:hover {
+      background-color: #1d4893;
+    }
+
+    /* 綁定資訊框（沿用 legend 風格） */
+    .info-box {
+      font-size: 15px;
+      background-color: #ffffff;
+      border: 2px solid #a3c0e9;
+      border-radius: 10px;
+      padding: 12px;
+      line-height: 1.8;
+      width: fit-content;
+      margin: 0 auto 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      text-align: left;
+    }
+
+    /* 訊息列表（flash） */
+    .flash-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 10px 0 0;
+    }
+    .flash-list li {
+      background: #ffffff;
+      border: 2px solid #a3c0e9;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 8px auto 0;
+      width: fit-content;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      color: #333;
+    }
+
+    /* 置中容器（與你的版型一致） */
+    .actions { text-align: center; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <h2>選擇我的諮商師</h2>
+
+  <!-- 綁定狀態 -->
+  <div class="info-box">
+    <strong>目前綁定的諮商師：</strong>
+    {% if bound_counselor %}
+      <span style="color:#1d4893">
+        {{ bound_counselor.account }}（{{ bound_counselor.clinic }}）
+      </span>
+    {% else %}
+      <span>尚未綁定</span>
     {% endif %}
-{% endwith %}
+  </div>
+
+  <!-- 主卡片 -->
+  <div class="card">
+    <h3>選擇與綁定</h3>
+    <form method="POST">
+      <div class="form-row">
+        <label for="counselor_name">選擇諮商師：</label><br>
+        <select name="counselor_name" id="counselor_name" required>
+          {% for c in counselors %}
+            <option value="{{ c.account }}"
+              {% if bound_counselor and bound_counselor.account == c.account %}selected{% endif %}>
+              {{ c.account }}（{{ c.clinic }}）
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-primary">綁定</button>
+        <button type="button" class="btn-secondary" onclick="history.back()">返回</button>
+      </div>
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flash-list">
+          {% for msg in messages %}
+            <li>{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+  </div>
+</body>
+</html>
