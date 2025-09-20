@@ -677,6 +677,53 @@ def suggestion():
     print("=======================")
     return jsonify({"suggestion": suggestion_text})
 
+@app.route("/patients_record")
+def patients_record():
+    if "user_id" not in session:
+        return redirect(url_for("login_counselor"))  # 或 login_user，看你的權限需求
+
+    # 取得該諮商師的患者列表
+    user = db.session.get(User, session["user_id"])
+    patients = Patient.query.filter_by(counselor_id=user.id).all()
+    
+    # 傳給模板 [(id, name), ...]
+    patient_list = [(p.id, p.name) for p in patients]
+    
+    return render_template("patients_record.html", patients=patient_list)
+
+@app.route("/get_dates/<int:user_id>")
+def get_dates(user_id):
+    if "user_id" not in session:
+        return jsonify([])
+
+    # 確認諮商師權限
+    patient = Patient.query.filter_by(user_id=user_id).first_or_404()
+    if patient.counselor_id != session["user_id"]:
+        return jsonify([])
+
+    # 從聊天紀錄取得日期
+    dates = db.session.query(ChatRecord.date)\
+            .filter_by(user_id=user_id)\
+            .distinct()\
+            .order_by(ChatRecord.date.desc())\
+            .all()
+    return jsonify([d[0] for d in dates])
+
+@app.route("/get_logs/<int:user_id>/<date>")
+def get_logs(user_id, date):
+    if "user_id" not in session:
+        return jsonify([])
+
+    patient = Patient.query.filter_by(user_id=user_id).first_or_404()
+    if patient.counselor_id != session["user_id"]:
+        return jsonify([])
+
+    records = ChatRecord.query.filter_by(user_id=user_id, date=date)\
+                .order_by(ChatRecord.time.asc()).all()
+
+    logs = [[r.sender, r.text, r.time] for r in records]
+    return jsonify(logs)
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all() # 確保資料庫和表格已建立
