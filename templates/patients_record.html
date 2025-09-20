@@ -1,10 +1,53 @@
-<h2>我的患者</h2>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>我的患者</title>
+  <style>
+    body {
+      background-color: #e8f1fc; /* 淡藍色背景 */
+      font-family: Arial, sans-serif;
+    }
+    h2 {
+      text-align: center;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+      width: 400px;
+      margin: 20px auto;
+      background-color: #ffffff; /* 白色區塊背景 */
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    li {
+      padding: 12px;
+      border-bottom: 1px solid #ccc;
+    }
+    li:last-child {
+      border-bottom: none;
+    }
+    a {
+      float: right;
+      text-decoration: none;
+      color: #007bff;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h2>我的患者</h2>
   <ul>
-  {% for p in patients %}
-    <li>{{ p.account }} 
-      <a href="{{ url_for('patient_chat', user_id=p.id) }}">查看聊天紀錄</a>
-    </li>
-  {% else %}
-    <li>目前沒有患者綁定</li>
-  {% endfor %}
+    {% for p in patients %}
+      <li>
+        <strong>{{ p.account }}</strong>
+        <a href="{{ url_for('patient_chat', user_id=p.id) }}">查看聊天紀錄</a>
+      </li>
+    {% else %}
+      <li style="text-align: center; color: #666;">目前沒有患者綁定</li>
+    {% endfor %}
   </ul>
+</body>
+</html>
