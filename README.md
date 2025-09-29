@@ -17,10 +17,9 @@
 | 組件         | 技術內容與功能                                                   |
 |--------------|------------------------------------------------------------------|
 | 前端        | HTML + JavaScript 〈支援錄音及音檔上傳與圖表呈現〉                     |
-| 後端        | Python (Flask) + CNN - BiGRU 模型載入 + LLM(Qwen2.5) + 情緒計算 + PostgreSQL  |
-| 模型        | CNN-BiGRU 組合（輸入 MFCC → 分類情緒類別）                        |
+| 後端        | Python (Flask) + CNN - BiGRU 模型載入 + LLM(Gemma 7B) + 情緒計算 + PostgreSQL  |
+| 模型        | CNN-BiGRU 組合（MFCC等語音特徵提取）                        |
 | 資料格式    | 上傳支援 `.wav` 或 `.webm` 音檔                                     |
-| 額外工具    | `requirements.txt`（依賴）、`.gitignore`                          |
 
 ## 四、範例輸入與預期輸出
 ### 1. 選擇登入平台的角色
