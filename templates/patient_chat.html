@@ -1,3 +1,4 @@
+
 <h2 style="text-align: center;">{{ patient.account }} 的聊天紀錄</h2>
 
 <div style="text-align: center; margin: 20px;">
@@ -28,7 +29,14 @@
       <td>{{ r.text }}</td>
     </tr>
     {% endfor %}
-</table>
+</table><br>
+<div style="display: flex; justify-content: center; margin-bottom: 20px;">
+    <a href="{{ url_for('patients_record') }}" 
+       style="text-decoration: none; padding: 8px 15px; font-size: 16px; border-radius: 8px; background-color:#6c757d; color: white; cursor: pointer;">
+        返回患者列表
+    </a>
+</div>
+
 
 <script>
 document.getElementById('summarizeBtn').addEventListener('click', async function() {

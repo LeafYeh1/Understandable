@@ -36,6 +36,28 @@
       padding: 15px;
       font-size: 18px;
       font-weight: bold;
+      /* --- 新增以下三行 --- */
+      display: flex;
+      justify-content: space-between; /* 讓標題和按鈕左右對齊 */
+      align-items: center; /* 垂直置中 */
+    }
+    #newChatBtn {
+      background: none;
+      border: 1px solid #fff;
+      color: #fff;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%; /* 圓形 */
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 24px; /* 微調讓"+"號置中 */
+      padding: 0;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    #newChatBtn:hover {
+      background-color: #fff;
+      color: #4a76a8;
     }
     .chat-item {
       padding: 15px;
@@ -118,14 +140,50 @@
     font-size: 14px;
     margin-left: 8px;
   }
+  #dateList {
+      flex-grow: 1; /* 讓日期列表填滿可用空間，把按鈕推到底部 */
+      overflow-y: auto; /* 如果日期太多，可以滾動 */
+  }
+  .back-button-container {
+      display: flex;
+      align-items: center; /* 垂直置中 */
+      padding: 2px; /* 減少外容器的 padding */
+      border-top: 1px solid #ddd;
+      background-color: #fafafa;
+  }
+  .back-button {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+      text-decoration: none;
+      padding: 10.5px 15px; /* 調整上下 padding 來對齊右側 */
+      font-size: 16px;
+      border-radius: 8px;
+      background-color: #6c757d;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s;
+  }
+  .back-button:hover {
+      background-color: #5a6268;
+  }
   </style>
 </head>
 <body>
   <div class="chat-app">
     <!-- 左側日期紀錄 -->
     <div class="chat-list">
-      <div class="chat-list-header">紀錄日期</div>
+      <div class="chat-list-header">
+        <span>紀錄日期</span>
+        <button id="newChatBtn" title="新增今天聊天紀錄">+</button>
+      </div>
       <div id="dateList"></div>
+      <div class="back-button-container">
+        <a href="{{ url_for('home') }}" class="back-button">
+          返回首頁
+        </a>
+      </div>
     </div>
 
     <!-- 右側聊天內容 -->
@@ -138,7 +196,7 @@
       </div>
     </div>
   </div>
-
+  
   <script>
     const chatMessages = document.getElementById("chatMessages");
     const chatInput = document.getElementById("chatInput");
@@ -158,7 +216,7 @@
       const now = new Date();
       return now.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
     }
-
+    
     function switchChat(date) {
       currentDate = date;
       chatHeader.innerText = date;
@@ -304,7 +362,26 @@
       .then(data => {
         data.dates.forEach(addDateToList);
       });
-      
+    
+    function createNewChat() {
+      const today = getTodayDate();
+
+      // 檢查今天的日期是否已經在列表上
+      const existingItem = document.querySelector(`.chat-item[data-date="${today}"]`);
+
+      if (!existingItem) {
+        // 如果不存在，才新增到列表和紀錄中
+        addDateToList(today);
+        if (!records[today]) {
+          records[today] = [];
+        }
+      }
+
+      // 無論是否存在，都切換到今天的聊天室
+      switchChat(today);
+    }
+    // 綁定「+」按鈕的點擊事件
+    document.getElementById('newChatBtn').addEventListener('click', createNewChat); 
   </script>
 </body>
 </html>
