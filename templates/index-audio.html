@@ -172,6 +172,10 @@
 
         mediaRecorder.onstop = () => {
             clearInterval(timerInterval);
+            // >> 在這裡加入這兩行，給予使用者明確的狀態回饋 <<
+            document.getElementById('result').textContent = `錄音成功，共 ${seconds} 秒。辨識需 2-3 分鐘，請稍候...`;
+            document.getElementById('result').style.color = '#2a5dba'; 
+
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             showAudioPreview(audioBlob);
             sendAudio(audioBlob);
@@ -194,7 +198,7 @@
     document.getElementById('stopBtn').onclick = () => {
         mediaRecorder.stop();
         document.getElementById('stopBtn').disabled = true;
-        document.getElementById('startBtn').disabled = false;
+        document.getElementById('startBtn').disabled = true;
     };
 
     document.getElementById("finalButton").addEventListener("click", async () => {
@@ -365,11 +369,18 @@
             } else {
                 document.getElementById('box3').textContent = "無法取得建議，請稍後再試。";
             }
+            // >> 在 try 區塊的「最後面」，也就是所有辨識和繪圖都成功後，加入成功訊息 <<
+            document.getElementById('result').textContent = '辨識完成！您可以開始新的錄音。';
+            document.getElementById('result').style.color = 'green';
 
         } catch (err) {
             console.error('上傳錯誤', err);
             resultElement.textContent = '發生錯誤，請再試一次';
             resultElement.style.color = 'red';
+        } finally {
+            // >> 新增 finally 區塊：確保無論成功或失敗，最後都把按鈕恢復到初始狀態 <<
+            document.getElementById('startBtn').disabled = false; // 重新啟用開始按鈕
+            document.getElementById('stopBtn').disabled = true;  // 確保停止按鈕是禁用的
         }
     }
 </script>

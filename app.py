@@ -14,6 +14,7 @@ from datetime import datetime
 from weasyprint import HTML
 import whisper # 語音轉文字
 import re
+from collections import Counter
 
 # 文字建議 gemini
 from Qwen import local_llm_generate
