@@ -1,17 +1,73 @@
 <h2 style="text-align: center;">{{ patient.account }} 的聊天紀錄</h2>
+
+<div style="text-align: center; margin: 20px;">
+    <button id="summarizeBtn" 
+            data-patient-id="{{ patient.id }}"
+            style="padding: 10px 20px; font-size: 16px; border-radius: 8px; background-color:#2a5dba; color: white; border: none; cursor: pointer;">
+        產生 AI 聊天摘要與建議
+    </button>
+</div>
+<div id="summaryContainer" style="width: 90%; margin: 20px auto; padding: 15px; background-color: #e8f1fc; border: 1px solid #a3c0e9; border-radius: 10px; text-align: left; display: none;">
+    <h3>AI 聊天摘要與建議</h3>
+    <div id="summaryResult" style="white-space: pre-wrap; line-height: 1.8;"></div>
+</div>
+
+
 <table border="1" style="background-color: #f0f8ff; border-collapse: collapse; width: 90%; margin: 0 auto; text-align: left;">
-<tr style="background-color: #87cefa;">
-  <th style="width: 15%; text-align: center;">日期</th>
-  <th style="width: 10%; text-align: center;">時間</th>
-  <th style="width: 5%; text-align: center;">角色</th>
-  <th style="width: 55%; text-align: center;">內容</th>
-</tr>
-{% for r in records %}
-<tr>
-  <td style="text-align: center;">{{ r.date }}</td>
-  <td style="text-align: center;">{{ r.time }}</td>
-  <td style="text-align: center;">{{ '使用者' if r.sender=='user' else 'AI' }}</td>
-  <td>{{ r.text }}</td>
-</tr>
-{% endfor %}
+    <tr style="background-color: #87cefa;">
+      <th style="width: 15%; text-align: center;">日期</th>
+      <th style="width: 10%; text-align: center;">時間</th>
+      <th style="width: 5%; text-align: center;">角色</th>
+      <th style="width: 55%; text-align: center;">內容</th>
+    </tr>
+    {% for r in records %}
+    <tr>
+      <td style="text-align: center;">{{ r.date }}</td>
+      <td style="text-align: center;">{{ r.time }}</td>
+      <td style="text-align: center;">{{ '使用者' if r.sender=='user' else 'AI' }}</td>
+      <td>{{ r.text }}</td>
+    </tr>
+    {% endfor %}
 </table>
+
+<script>
+document.getElementById('summarizeBtn').addEventListener('click', async function() {
+    const patientId = this.dataset.patientId;
+    const summaryContainer = document.getElementById('summaryContainer');
+    const summaryResult = document.getElementById('summaryResult');
+    const summarizeBtn = this;
+
+    // 顯示讀取中狀態
+    summaryContainer.style.display = 'block';
+    summaryResult.textContent = 'AI 正在分析中，請稍候...';
+    summarizeBtn.disabled = true;
+    summarizeBtn.textContent = '分析中...';
+
+    try {
+        const response = await fetch('/summarize_chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ patient_id: patientId })
+        });
+
+        if (!response.ok) {
+            throw new Error('伺服器錯誤，無法產生摘要。');
+        }
+
+        const data = await response.json();
+        
+        // 將 AI 回傳的結果顯示在畫面上
+        summaryResult.textContent = data.summary;
+
+    } catch (error) {
+        console.error('產生摘要時發生錯誤:', error);
+        summaryResult.textContent = '產生摘要時發生錯誤，請檢查主控台或稍後再試。';
+    } finally {
+        // 無論成功或失敗，都恢復按鈕狀態
+        summarizeBtn.disabled = false;
+        summarizeBtn.textContent = '產生 AI 聊天摘要與建議';
+    }
+});
+</script>

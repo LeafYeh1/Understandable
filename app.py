@@ -753,6 +753,54 @@ def get_dates(user_id):
             .all()
     return jsonify([d[0] for d in dates])
 
+# app.py
+
+@app.route("/summarize_chat", methods=["POST"])
+def summarize_chat():
+    # 權限檢查：確保是登入的諮商師
+    if "user_id" not in session or session.get("role") != "counselor":
+        return jsonify({"error": "權限不足"}), 403
+
+    data = request.get_json()
+    patient_id = data.get("patient_id")
+    if not patient_id:
+        return jsonify({"error": "未提供患者 ID"}), 400
+
+    # 安全性檢查：再次確認這位患者是屬於目前登入的諮商師
+    patient = User.query.filter_by(id=patient_id, role="user", counselor_id=session["user_id"]).first()
+    if not patient:
+        return jsonify({"error": "找不到指定的患者或權限不符"}), 404
+
+    # 獲取該患者的所有聊天紀錄
+    records = ChatRecord.query.filter_by(user_id=patient_id).order_by(ChatRecord.date, ChatRecord.time).all()
+    if not records:
+        return jsonify({"summary": "這位使用者還沒有任何聊天紀錄。"})
+
+    # 將聊天紀錄格式化成一段文字，送給 AI
+    chat_log = ""
+    for r in records:
+        sender = '使用者' if r.sender == 'user' else 'AI'
+        chat_log += f"{sender}: {r.text}\n"
+
+    # --- 這是最重要的部分：給予 AI 清晰的指令 (Prompt) ---
+    prompt = (
+        "你是一位專業的心理諮商師助理，請使用繁體中文回覆。\n"
+        "你的任務是總結以下使用者與AI助理的聊天紀錄，找出關鍵的情緒主題、潛在問題，並為諮商師提供具體的應對建議。\n\n"
+        f"【聊天紀錄】\n{chat_log}\n\n"
+        "請根據以上內容，嚴格遵守以下格式輸出你的分析報告：\n"
+        "【聊天總結】\n(這裡簡要總結對話的核心內容，約 2-3句話)\n\n"
+        "【主要情緒與議題】\n(這裡列點說明觀察到的主要情緒，例如：焦慮、低落感、人際關係困擾等)\n\n"
+        "【給諮商師的建議】\n(這裡列點提供具體、可操作的建議，幫助諮商師在下次會談時可以切入的重點或可以使用的技巧)\n"
+    )
+
+    # 呼叫你的大型語言模型來產生總結
+    summary_text = local_llm_generate(prompt, num_ctx=4096, temperature=0.5)
+
+    if not summary_text:
+        summary_text = "無法產生總結，請稍後再試。"
+        
+    return jsonify({"summary": summary_text})
+
 @app.route("/get_logs/<int:user_id>/<date>")
 def get_logs(user_id, date):
     if "user_id" not in session:
