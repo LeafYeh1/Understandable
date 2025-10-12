@@ -1,4 +1,8 @@
-import os
+import os, pathlib, requests
+
+MODEL_URL = os.getenv("EMOTION_MODEL_URL")  # 例如放 GitHub Release 的直連
+MODEL_PATH = "/tmp/emotion_model.h5"
+
 # flask 基礎設定
 from flask import Flask, request, jsonify
 from flask import render_template, send_file, session, redirect, url_for, flash
