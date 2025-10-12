@@ -33,7 +33,7 @@ app = Flask(__name__)
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # 初始化 Whisper 模型（可選 tiny, base, small, medium, large）
-whisper_model = whisper.load_model("small")
+whisper_model = whisper.load_model("base")
 
 # 設定密鑰和資料庫
 app.secret_key = 'supersecretkey'
