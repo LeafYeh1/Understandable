@@ -5,7 +5,6 @@ from flask import render_template, send_file, session, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 
 # 第三方函式庫
-from tensorflow.keras.models import load_model
 import numpy as np
 import librosa
 from pydub import AudioSegment
@@ -13,7 +12,6 @@ from io import BytesIO
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from weasyprint import HTML
-import whisper # 語音轉文字
 import re
 from collections import Counter
 
@@ -31,9 +29,8 @@ import io
 app = Flask(__name__)
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-
-# 初始化 Whisper 模型（可選 tiny, base, small, medium, large）
-whisper_model = whisper.load_model("base")
+_emotion_model = None
+_whisper_model = None
 
 # 設定密鑰和資料庫
 app.secret_key = 'supersecretkey'
@@ -87,7 +84,26 @@ class ChatRecord(db.Model):
     sender = db.Column(db.String(10))  # "user" or "ai"
     text = db.Column(db.Text)
     time = db.Column(db.String(10))   # HH:MM
-    
+
+def get_emotion_model():
+    """第一次呼叫才載入 Keras 模型；之後共用同一份"""
+    global _emotion_model
+    if _emotion_model is None:
+        # 重型 import 放在函式內，避免啟動時就吃記憶體
+        from tensorflow.keras.models import load_model
+        model_path = os.getenv("MODEL_PATH", "emotion_model.h5")  # 你的預設檔名
+        _emotion_model = load_model(model_path, compile=False)
+    return _emotion_model
+
+def get_whisper():
+    """第一次呼叫才載入 Whisper（openai/whisper）；預設 tiny 以保 RAM"""
+    global _whisper_model
+    if _whisper_model is None:
+        import whisper  # 延後 import
+        size = os.getenv("WHISPER_MODEL", "tiny")  # ← Heroku 環境變數可覆蓋
+        _whisper_model = whisper.load_model(size)
+    return _whisper_model
+ 
 def decode_audio_to_16k_mono(file_bytes: io.BytesIO, filename: str | None = None):
     """
     優先用 soundfile 一次讀 → 轉單聲道 → 16k。
@@ -241,7 +257,7 @@ def extract_features_batch(y_list, sr=16000, max_len=500):
 class EmotionAnalyzer:
     def __init__(self, model_path="emotion_model.h5", sr=16000, win_s=3.0, hop_s=1.5):
         # 關掉 compile 警告：推論不需要 metrics
-        self.model = load_model(model_path, compile=False)
+        self.model_path = model_path
         self.sr = sr
         self.win_s = win_s
         self.hop_s = hop_s
@@ -254,6 +270,7 @@ class EmotionAnalyzer:
         3) 批次特徵 → 一次 model.predict
         4) 回傳：({emotion: count}, [label序列])
         """
+        model = get_emotion_model()
         ts_list = self.vad.speech_timestamps(y_all)
         if not ts_list:
             return {c: 0 for c in class_names}, []
@@ -676,13 +693,15 @@ def predict():
     # 2) Whisper 轉文字（openai/whisper）
     transcript_text = ""
     try:
-        asr_result = whisper_model.transcribe(y, language="zh", fp16=False, condition_on_previous_text=False)
-        transcript_text = (asr_result.get("text") or "").strip()
+        wm = get_whisper()
+        asr_result = wm.transcribe(y, language="zh", fp16=False, condition_on_previous_text=False)
+        # openai/whisper 回傳可能是 dict 或物件，保守處理
+        transcript_text = (getattr(asr_result, "text", None) or asr_result.get("text") or "").strip()
         if not transcript_text:
-            asr_result = whisper_model.transcribe(y, fp16=False, condition_on_previous_text=False)
-            transcript_text = (asr_result.get("text") or "").strip()
+            asr_result = wm.transcribe(y, fp16=False, condition_on_previous_text=False)
+            transcript_text = (getattr(asr_result, "text", None) or asr_result.get("text") or "").strip()
         session["last_transcript"] = transcript_text
-        print(f"[Whisper] 轉文字成功：{transcript_text}")  # 只顯示前50字
+        print(f"[Whisper] 轉文字成功：{transcript_text}")
     except Exception as e:
         print(f"[Whisper] 轉文字失敗：{e}")
         session["last_transcript"] = ""
