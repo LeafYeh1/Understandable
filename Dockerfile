@@ -4,8 +4,19 @@ FROM python:3.11-slim
 # 設定工作目錄
 WORKDIR /app
 
+# ⭐️ 新增的部分：安裝系統依賴 ⭐️
+# 更新套件庫並安裝 WeasyPrint 和 FFmpeg 所需的系統依賴
+# --no-install-recommends 可以減少不必要的安裝，讓映像檔小一點
+RUN apt-get update && apt-get install -y \
+    libpango-1.0-0 \
+    libharfbuzz0b \
+    libpangoft2-1.0-0 \
+    libgobject-2.0-0 \
+    ffmpeg \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
 # 複製 requirements.txt 並安裝套件
-# --no-cache-dir 可以稍微減少映像檔大小
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -13,5 +24,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Heroku 會自動注入 PORT 環境變數
-# 這行指令會啟動你的 Gunicorn 伺服器，跟你的 Procfile 做的事情一樣
+# 這行指令會啟動你的 Gunicorn 伺服器
 CMD gunicorn --bind 0.0.0.0:$PORT app:app
