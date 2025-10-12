@@ -1,9 +1,11 @@
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
 Flask
 Flask-SQLAlchemy
 gunicorn
 psycopg2-binary
 numpy
-tensorflow
+tensorflow-cpu
 librosa
 pydub
 openai-whisper
@@ -11,3 +13,6 @@ soundfile
 webrtcvad-wheels
 WeasyPrint
 werkzeug
+torch
+torchvision
+torchaudio
