@@ -10,3 +10,7 @@ __pycache__/
 
 # 忽略上傳資料夾
 uploads/
+
+# Virtual Environment
+venv/
+env/
