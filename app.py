@@ -1,3 +1,4 @@
+import os
 # flask 基礎設定
 from flask import Flask, request, jsonify
 from flask import render_template, send_file, session, redirect, url_for, flash
@@ -36,7 +37,15 @@ whisper_model = whisper.load_model("small")
 
 # 設定密鑰和資料庫
 app.secret_key = 'supersecretkey'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123456@localhost/emotion_app' 
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    # Heroku 的 URL 開頭是 postgres://，但 SQLAlchemy 需要 postgresql://
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+else:
+    # 如果在本機執行，則維持原本的設定
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123456@localhost/emotion_app'
+    
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -818,5 +827,5 @@ def get_logs(user_id, date):
 
 if __name__ == "__main__":
     with app.app_context():
-        db.create_all() # 確保資料庫和表格已建立
-    app.run(debug=True)
+        db.create_all() # 這行可以留著，方便本機測試
+    # app.run(debug=True) # <-- 已註解掉或刪除
