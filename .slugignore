@@ -1,0 +1,14 @@
+# 排除 Git 檔案庫
+.git/
+
+# 排除虛擬環境 (雙重保險)
+venv/
+env/
+
+# 排除 Python 快取
+__pycache__/
+*.pyc
+*.pyo
+
+# 排除測試檔案 (如果有的話)
+tests/
