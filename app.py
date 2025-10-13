@@ -737,43 +737,46 @@ def generate_report():
 # 音檔預測
 @app.route("/predict", methods=["POST"])
 def predict():
-    """
-    一次解碼 → Whisper 與情緒分析共用 y → VAD + 滑動窗 + 批次推論
-    """
-    if "file" not in request.files:
-        return jsonify({"error": "No file provided"}), 400
-
-    up = request.files["file"]
-    filename = up.filename or ""
-    file_bytes = io.BytesIO(up.read())
-
-    # 1) 只解碼一次（16k/mono/float32）
-    y, sr = decode_audio_to_16k_mono(file_bytes, filename=filename)
-
-    # 2) Whisper 轉文字（openai/whisper）
-    transcript_text = ""
+    stage = "start"
     try:
-        wm = get_whisper()
-        asr_result = wm.transcribe(y, language="zh", fp16=False, condition_on_previous_text=False)
-        # openai/whisper 回傳可能是 dict 或物件，保守處理
-        transcript_text = (getattr(asr_result, "text", None) or asr_result.get("text") or "").strip()
-        if not transcript_text:
-            asr_result = wm.transcribe(y, fp16=False, condition_on_previous_text=False)
-            transcript_text = (getattr(asr_result, "text", None) or asr_result.get("text") or "").strip()
-        session["last_transcript"] = transcript_text
-        print(f"[Whisper] 轉文字成功：{transcript_text}")
+        if "file" not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+
+        up = request.files["file"]
+        filename = up.filename or ""
+        file_bytes = io.BytesIO(up.read())
+
+        stage = "decode_audio"
+        y, sr = decode_audio_to_16k_mono(file_bytes, filename=filename)
+        app.logger.info("[predict] decoded: len=%d sr=%d", len(y), sr)
+
+        transcript_text = ""
+        if os.getenv("WHISPER_ENABLED", "1") == "1":
+            try:
+                stage = "whisper"
+                wm = get_whisper()
+                asr_result = wm.transcribe(y, language="zh", fp16=False, condition_on_previous_text=False)
+                transcript_text = (getattr(asr_result, "text", None) or asr_result.get("text") or "").strip()
+                session["last_transcript"] = transcript_text
+            except Exception as e:
+                app.logger.warning("[Whisper] 轉文字失敗：%r", e)
+                session["last_transcript"] = ""
+
+        stage = "analyze"
+        pie_chart, line_chart = analyzer.analyze(y)
+        app.logger.info("[predict] analyze done: %s", pie_chart)
+
+        return jsonify({
+            "pie_chart": pie_chart,
+            "line_chart": line_chart,
+            "transcript": transcript_text
+        }), 200
+
     except Exception as e:
-        print(f"[Whisper] 轉文字失敗：{e}")
-        session["last_transcript"] = ""
-
-    # 3) 情緒分析：VAD → 滑動窗 → 批次 → 一次 predict
-    pie_chart, line_chart = analyzer.analyze(y)
-
-    return jsonify({
-        "pie_chart": pie_chart,
-        "line_chart": line_chart,
-        "transcript": transcript_text
-    }), 200
+        tb = traceback.format_exc()
+        app.logger.error("[predict] failed at stage=%s: %r\n%s", stage, e, tb)
+        # 直接回 JSON，前端不要只顯示「發生錯誤」，把 error/stage 印出來
+        return jsonify({"error": str(e), "stage": stage, "trace": tb}), 500
 
 @app.route("/suggestion", methods=["POST"])
 def suggestion():
