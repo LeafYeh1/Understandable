@@ -24,6 +24,7 @@ import sys
 import soundfile as sf
 import webrtcvad
 import io
+import traceback, logging
 
 # 初始化 Flask 應用
 app = Flask(__name__)
@@ -49,6 +50,20 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# 設定日誌紀錄
+app.logger.setLevel(logging.DEBUG)
+
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    try:
+        # ... 你的既有處理流程 ...
+        return render_template("result.html", ...)
+    except Exception as e:
+        app.logger.error("Emotion pipeline failed: %s", e)
+        app.logger.error(traceback.format_exc())
+        # 暫時也把錯訊回傳在頁面上（方便抓堆疊），之後再拿掉
+        return f"<pre>{traceback.format_exc()}</pre>", 500
+    
 # 定義情緒類別
 class_names = ['ang', 'dis', 'fear', 'happy', 'neu', 'sad']
 
