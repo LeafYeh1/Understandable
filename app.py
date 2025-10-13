@@ -26,6 +26,8 @@ import webrtcvad
 import io
 import traceback, logging
 
+import hashlib, pathlib, requests
+
 # 初始化 Flask 應用
 app = Flask(__name__)
 
@@ -49,6 +51,7 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
 
 # 設定日誌紀錄
 app.logger.setLevel(logging.DEBUG)
@@ -102,15 +105,54 @@ class ChatRecord(db.Model):
     sender = db.Column(db.String(10))  # "user" or "ai"
     text = db.Column(db.Text)
     time = db.Column(db.String(10))   # HH:MM
+    
+MODEL_URL = os.getenv("EMOTION_MODEL_URL")
+MODEL_SHA256 = os.getenv("EMOTION_MODEL_SHA256","").lower()
+MODEL_PATH = os.getenv("MODEL_PATH","/tmp/emotion_model.h5")
+
+def _sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest().lower()
+
+def ensure_model():
+    if os.path.exists(MODEL_PATH):
+        if MODEL_SHA256:
+            try:
+                if _sha256(MODEL_PATH) == MODEL_SHA256:
+                    app.logger.info("[model] cached ok: %s", MODEL_PATH)
+                    return
+                else:
+                    app.logger.warning("[model] sha mismatch, re-downloading")
+            except Exception as e:
+                app.logger.warning("[model] checksum error: %r, re-downloading", e)
+        else:
+            app.logger.info("[model] cached (no sha): %s", MODEL_PATH)
+            return
+
+    if not MODEL_URL:
+        raise RuntimeError("EMOTION_MODEL_URL not set and model file missing")
+
+    app.logger.info("[model] downloading: %s", MODEL_URL)
+    r = requests.get(MODEL_URL, timeout=120)  # GitHub 可能會 302，requests 會自動跟隨
+    r.raise_for_status()
+    pathlib.Path(MODEL_PATH).write_bytes(r.content)
+    app.logger.info("[model] saved: %s (%d bytes)", MODEL_PATH, len(r.content))
+
+    if MODEL_SHA256 and _sha256(MODEL_PATH) != MODEL_SHA256:
+        raise RuntimeError("Model SHA256 mismatch after download")
+    app.logger.info("[model] ready.")
 
 def get_emotion_model():
-    """第一次呼叫才載入 Keras 模型；之後共用同一份"""
     global _emotion_model
     if _emotion_model is None:
-        # 重型 import 放在函式內，避免啟動時就吃記憶體
+        ensure_model()
         from tensorflow.keras.models import load_model
-        model_path = os.getenv("MODEL_PATH", "emotion_model.h5")  # 你的預設檔名
-        _emotion_model = load_model(model_path, compile=False)
+        app.logger.info("[model] loading %s ...", MODEL_PATH)
+        _emotion_model = load_model(MODEL_PATH, compile=False)
+        app.logger.info("[model] loaded.")
     return _emotion_model
 
 def get_whisper():
