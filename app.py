@@ -37,12 +37,15 @@ app.secret_key = 'supersecretkey'
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
-    # Heroku 的 URL 開頭是 postgres://，但 SQLAlchemy 需要 postgresql://
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    db_url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    # 加 sslmode=require，確保 Heroku 可連線
+    if "sslmode=" not in db_url:
+        sep = "&" if "?" in db_url else "?"
+        db_url = f"{db_url}{sep}sslmode=require"
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 else:
-    # 如果在本機執行，則維持原本的設定
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123456@localhost/emotion_app'
-    
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
