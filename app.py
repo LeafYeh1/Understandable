@@ -300,7 +300,7 @@ class EmotionAnalyzer:
             return {c: 0 for c in class_names}, []
 
         X = extract_features_batch(chunks, sr=self.sr, max_len=500)
-        preds = self.model.predict(X, verbose=0)  # 一次推論
+        preds = model.predict(X, verbose=0)  # 一次推論
         labels_idx = np.argmax(preds, axis=1)
         labels = [class_names[i] for i in labels_idx]
 
