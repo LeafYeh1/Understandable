@@ -16,7 +16,9 @@ import re
 from collections import Counter
 
 # 文字建議 gemini
-from Qwen import local_llm_generate
+from dotenv import load_dotenv
+import google.generativeai as genai
+from Gemini import gemini_generate
 import json as pyjson 
 import sys
 
@@ -30,7 +32,7 @@ import hashlib, pathlib, requests
 
 # 初始化 Flask 應用
 app = Flask(__name__)
-
+load_dotenv()
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 _emotion_model = None
 _whisper_model = None
@@ -620,7 +622,7 @@ def chat_ai():
     print(prompt)
     print("============================")
 
-    reply = local_llm_generate(prompt, num_ctx=1024, temperature=0.7)
+    reply = gemini_generate(prompt, max_output_tokens=1024, temperature=0.7)
 
     # 印出 AI 回覆
     print("=== chat_ai AI 回覆 ===")
@@ -809,7 +811,7 @@ def suggestion():
         "【同理建議】\n(一句溫暖務實的話)\n"
         "【情緒調節方法】\n1. ...\n2. ...\n3. ...\n4. ...\n"
     )
-    suggestion_text = local_llm_generate(prompt, num_ctx=2048, temperature=0.6) or "（暫無建議，請稍後再試）"
+    suggestion_text = gemini_generate(prompt, max_output_tokens=2048, temperature=0.6) or "（暫無建議，請稍後再試）"
     
     print("=== 模型產出內容如下 ===")
     print(suggestion_text)
@@ -885,7 +887,7 @@ def summarize_chat():
     )
 
     # 呼叫你的大型語言模型來產生總結
-    summary_text = local_llm_generate(prompt, num_ctx=4096, temperature=0.5)
+    summary_text = gemini_generate(prompt, max_output_tokens=4096, temperature=0.5)
 
     if not summary_text:
         summary_text = "無法產生總結，請稍後再試。"
