@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+serif<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -187,7 +187,7 @@
             lineCtx.clearRect(0, 0, lineCtx.canvas.width, lineCtx.canvas.height);
 
             try {
-                const response = await fetch('http://localhost:5000/predict', {
+                const response = await fetch('/predict', {
                     method: 'POST',
                     body: formData
                 });
@@ -265,7 +265,7 @@
                 });
 
                 // 呼叫後端 /suggestion 取得建議文字
-                const suggestResponse = await fetch("http://localhost:5000/suggestion", {
+                const suggestResponse = await fetch("/suggestion", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -310,7 +310,7 @@
             }
 
             // 傳送到後端產 PDF
-            const response = await fetch("http://localhost:5000/generate_report", {
+            const response = await fetch("/generate_report", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
