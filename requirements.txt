@@ -18,3 +18,4 @@ torchvision
 torchaudio
 resampy
 google-generativeai
+python-dotenv
