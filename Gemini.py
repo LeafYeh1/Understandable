@@ -27,10 +27,17 @@ def gemini_generate(prompt: str, temperature: float = 0.7, max_output_tokens: in
             temperature=temperature,
             max_output_tokens=max_output_tokens
         )
+        safety_settings = {
+            'HARM_CATEGORY_HARASSMENT': 'BLOCK_NONE',
+            'HARM_CATEGORY_HATE_SPEECH': 'BLOCK_NONE',
+            'HARM_CATEGORY_SEXUALLY_EXPLICIT': 'BLOCK_NONE',
+            'HARM_CATEGORY_DANGEROUS_CONTENT': 'BLOCK_NONE',
+        }
         response = gemini_model.generate_content(
             prompt,
             generation_config=generation_config,
-            request_options={"timeout": timeout}
+            request_options={"timeout": timeout},
+            safety_settings=safety_settings
         )
         return response.text.strip()
     except Exception as e:
