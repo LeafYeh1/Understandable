@@ -824,7 +824,7 @@ def suggestion():
         "【同理建議】\n(一句溫暖務實的話)\n"
         "【情緒調節方法】\n1. ...\n2. ...\n3. ...\n4. ...\n"
     )
-    suggestion_text = gemini_generate(prompt, max_output_tokens=2048, temperature=0.6) or "（暫無建議，請稍後再試）"
+    suggestion_text = gemini_generate(prompt, max_output_tokens=2048, temperature=0.6) or "【測試成功】新版程式碼已部署！"
     
     print("=== 模型產出內容如下 ===")
     print(suggestion_text)
