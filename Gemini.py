@@ -13,8 +13,7 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 # 建立 Gemini 模型物件
-# 'gemini-1.5-flash-latest' 是速度快、CP值高的最新模型
-gemini_model = genai.GenerativeModel('gemini-1.5-flash-latest')
+gemini_model = genai.GenerativeModel('gemini-pro')
 
 
 # --- 2. 可被外部呼叫的 generate 函式 ---
