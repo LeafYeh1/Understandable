@@ -355,6 +355,19 @@ class EmotionAnalyzer:
     
 # 初始化情緒分析器
 analyzer = EmotionAnalyzer()
+
+def preload_models():
+    """
+    在應用程式啟動時，預先載入所有耗時的模型，避免第一個請求超時。
+    """
+    app.logger.info("[Preload] 正在預先載入模型...")
+    try:
+        get_emotion_model()  # 載入情緒模型
+        get_whisper()        # 載入 Whisper 模型
+        app.logger.info("[Preload] 所有模型載入完畢！")
+    except Exception as e:
+        app.logger.error("[Preload] 模型預載失敗: %s", e)
+        
 @app.route("/")
 def choose_role():
     return render_template("choose_role.html")
@@ -616,7 +629,7 @@ def chat_ai():
     "你是一個友善的聊天助手，請務必使用繁體中文回答。\n\n"
     f"{context}你: {user_msg}\nAI:"
 )
-
+    app.logger.info(f"[Chat Prompt] Sending to Gemini: {prompt}")
     # 印出 prompt
     print("=== chat_ai 組成的 prompt ===")
     print(prompt)
@@ -908,6 +921,8 @@ def get_logs(user_id, date):
 
     logs = [[r.sender, r.text, r.time] for r in records]
     return jsonify(logs)
+
+preload_models()
 
 if __name__ == "__main__":
     with app.app_context():

@@ -34,6 +34,7 @@ def gemini_generate(prompt: str, temperature: float = 0.7, max_output_tokens: in
             generation_config=generation_config,
             request_options={"timeout": timeout}
         )
+        print(f"[Gemini Response] Full response object: {response}")
         return response.text.strip()
     except Exception as e:
         # 在伺服器環境中，印出錯誤是很好的除錯習慣
