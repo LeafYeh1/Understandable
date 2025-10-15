@@ -13,7 +13,7 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 # 建立 Gemini 模型物件
-gemini_model = genai.GenerativeModel('gemini-pro')
+gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 
 
 # --- 2. 可被外部呼叫的 generate 函式 ---
