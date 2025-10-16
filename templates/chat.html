@@ -239,55 +239,45 @@
       const text = chatInput.value.trim();
       if (text === "") return;
 
-      let isNewChatSession = false;
-      // 如果還沒選定任何聊天日期
+      // 如果還沒選日期，自動用今天日期
       if (!currentDate) {
-          currentDate = getTodayDate();
-          isNewChatSession = true;
+        currentDate = getTodayDate();
 
-          // 如果今天日期還沒出現在左側列表上，就新增它
-          if (!document.querySelector(`.chat-item[data-date="${currentDate}"]`)) {
-              addDateToList(currentDate);
-          }
-      }
-      
-      // 如果是全新的對話，我們需要手動設定好UI，而不是呼叫會覆蓋資料的 switchChat
-      if (isNewChatSession) {
-          chatHeader.innerText = currentDate;
-          document.querySelectorAll(".chat-item").forEach(item => item.classList.remove("active"));
-          const selected = document.querySelector(`.chat-item[data-date="${currentDate}"]`);
-          if (selected) selected.classList.add("active");
-
-          // 確保本地端的 records 陣列已初始化
-          if (!records[currentDate]) {
-              records[currentDate] = [];
-          }
+        // 如果今天日期不存在於左側，新增
+        if (!records[currentDate]) {
+          records[currentDate] = [];
+          addDateToList(currentDate);
+        }
+        switchChat(currentDate);
       }
 
-      // 後續邏輯不變：新增使用者訊息到本地端
+      // 新增使用者訊息
+      if (!records[currentDate]) {
+        records[currentDate] = [];
+      }
       records[currentDate].push({ text, sender: "user", time: getCurrentTime() });
 
       chatInput.value = "";
-      renderMessages(); // 立刻渲染，這時訊息還在
+      renderMessages();
 
-      // 呼叫後端 AI 回覆 (這部分是正確的)
+      // 呼叫後端 AI 回覆
       fetch("/chat_ai", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-              message: text,
-              history: records[currentDate],
-              date: currentDate
-          })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          history: records[currentDate],  // 傳送當天所有訊息
+          date: currentDate
+        })
       })
       .then(res => res.json())
       .then(data => {
-          if (data.reply) {
-              records[currentDate].push({ text: data.reply, sender: "ai", time: getCurrentTime() });
-              renderMessages();
-          }
+        if (data.reply) {
+          records[currentDate].push({ text: data.reply, sender: "ai", time: getCurrentTime() });
+          renderMessages();
+        }
       });
-  }
+    }
 
     function renderMessages() {
       chatMessages.innerHTML = "";
