@@ -315,6 +315,20 @@ def extract_features_batch(y_list, sr=16000, max_len=500):
     X = np.stack(feats, axis=0)
     return X
 
+def strip_markdown(text):
+    """移除常見的 Markdown 格式，回傳純文字"""
+    if not text:
+        return ""
+    # 移除標題符號 (例如 #, ##)
+    text = re.sub(r'^\s*#+\s*', '', text, flags=re.MULTILINE)
+    # 移除粗體和斜體 (例如 **, *, __, _)
+    text = re.sub(r'(\*\*|__)(.*?)\1', r'\2', text)
+    text = re.sub(r'(\*|_)(.*?)\1', r'\2', text)
+    # 移除列表符號 (例如 *, -, +)
+    text = re.sub(r'^\s*[\*\-\+]\s+', '', text, flags=re.MULTILINE)
+    # 移除行內程式碼反引號
+    text = re.sub(r'`(.*?)`', r'\1', text)
+    return text
 
 class EmotionAnalyzer:
     def __init__(self, model_path="emotion_model.h5", sr=16000, win_s=3.0, hop_s=1.5):
@@ -635,7 +649,8 @@ def chat_ai():
     print(prompt)
     print("============================")
 
-    reply = gemini_generate(prompt, max_output_tokens=1024, temperature=0.7)
+    raw_reply = gemini_generate(prompt, max_output_tokens=1024, temperature=0.7)
+    reply = strip_markdown(raw_reply)
 
     # 印出 AI 回覆
     print("=== chat_ai AI 回覆 ===")
@@ -823,8 +838,10 @@ def suggestion():
         "6) 輸出格式必須固定如下（不得省略標題與編號）：\n"
         "【同理建議】\n(一句溫暖務實的話)\n"
         "【情緒調節方法】\n1. ...\n2. ...\n3. ...\n4. ...\n"
+        "7) 請勿使用任何 Markdown 語法 (例如 #, *, -)，直接輸出純文字。\n"
     )
-    suggestion_text = gemini_generate(prompt, max_output_tokens=2048, temperature=0.6) or "【測試成功】新版程式碼已部署！"
+    raw_suggestion = gemini_generate(prompt, max_output_tokens=2048, temperature=0.6) or "目前暫無建議，請稍後再試。"
+    suggestion_text = strip_markdown(raw_suggestion)
     
     print("=== 模型產出內容如下 ===")
     print(suggestion_text)
@@ -897,13 +914,17 @@ def summarize_chat():
         "【聊天總結】\n(這裡簡要總結對話的核心內容，約 2-3句話)\n\n"
         "【主要情緒與議題】\n(這裡列點說明觀察到的主要情緒，例如：焦慮、低落感、人際關係困擾等)\n\n"
         "【給諮商師的建議】\n(這裡列點提供具體、可操作的建議，幫助諮商師在下次會談時可以切入的重點或可以使用的技巧)\n"
+        "最後，請注意：你的回覆中，請勿包含任何 Markdown 格式語法 (例如 #, *, -)，所有內容都必須是純文字。"
     )
 
     # 呼叫你的大型語言模型來產生總結
-    summary_text = gemini_generate(prompt, max_output_tokens=4096, temperature=0.5)
+    raw_summary = gemini_generate(prompt, max_output_tokens=4096, temperature=0.5)
 
-    if not summary_text:
+    if not raw_summary:
         summary_text = "無法產生總結，請稍後再試。"
+    else:
+        # ✨ 使用 strip_markdown 清理輸出
+        summary_text = strip_markdown(raw_summary)
         
     return jsonify({"summary": summary_text})
 
