@@ -147,188 +147,195 @@
     </div>
 
     <script>
-        let pieChartInstance = null;
-        let lineChartInstance = null;
+        // --- 1. 全域變數定義 ---
+        const chatMessages = document.getElementById("chatMessages");
+        const chatInput = document.getElementById("chatInput");
+        const chatHeader = document.getElementById("chatHeader");
+        const dateList = document.getElementById("dateList");
+        const records = {};
+        let currentDate = null;
 
-        async function uploadFile() {
-            
-            const fileInput = document.getElementById('audioFile');
-            const resultElement = document.getElementById('result');
-
-            if (fileInput.files.length === 0) {
-                alert('請選擇一個音訊檔案');
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const formData = new FormData();
-            formData.append('file', file);
-
-            resultElement.textContent = '辨識中，請稍後 1-2 分鐘...';
-            resultElement.style.color = 'gray';
-
-            // 清除前一筆圖表
-            if (pieChartInstance) {
-                pieChartInstance.destroy();
-                pieChartInstance = null;
-            }
-            if (lineChartInstance) {
-                lineChartInstance.destroy();
-                lineChartInstance = null;
-            }
-            // 清空建議文字
-            document.getElementById('suggestionText').textContent = '輸入語音情續分析後，建議文字將顯示在這裡。';
-
-            // 清空 canvas（確保乾淨）
-            const pieCtx = document.getElementById('pieChart').getContext('2d');
-            pieCtx.clearRect(0, 0, pieCtx.canvas.width, pieCtx.canvas.height);
-
-            const lineCtx = document.getElementById('lineChart').getContext('2d');
-            lineCtx.clearRect(0, 0, lineCtx.canvas.width, lineCtx.canvas.height);
-
-            try {
-                const response = await fetch('/predict', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-
-                //顯示中文情緒
-                const emotionMap = {
-                    happy: "開心",
-                    neu: "中性",
-                    sad: "傷心",
-                    fear: "害怕",
-                    dis: "厭惡",
-                    ang: "生氣"
-                };
-
-                // 顯示結果到框中
-                // 顯示餅圖
-                const pieData = {
-                    labels: Object.keys(result.pie_chart).map(e => emotionMap[e]), // 中文標籤
-                    datasets: [{
-                        label: '情緒分布',
-                        data: Object.values(result.pie_chart),
-                        backgroundColor: [
-                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-                        ]
-                    }]
-                };
-                const pieBase64 = document.getElementById('pieChart').toDataURL("image/png")
-                pieChartInstance = new Chart(document.getElementById('pieChart'), {
-                    type: 'pie',
-                    data: pieData
-                });
-
-                // 顯示折線圖
-                const lineData = {
-                    labels: result.line_chart.map((_, i) => `第${i + 1}段`),
-                    datasets: [{
-                        label: '情緒走勢',
-                        data: result.line_chart.map(e => emotionMap[e]),
-                        fill: false,
-                        borderColor: '#2a5dba',
-                        tension: 0.2
-                    }]
-                };
-                const lineBase64 = document.getElementById('lineChart').toDataURL("image/png");
-                lineChartInstance = new Chart(document.getElementById('lineChart'), {
-                    type: 'line',
-                    data: lineData,
-                    options: {
-                        scales: {
-                            y: {
-                                type: 'category',
-                                labels: ['生氣', '厭惡', '害怕', '傷心', '中性', '開心'],
-                                title: {
-                                    display: true,
-                                    text: '情緒'
-                                },
-                                grid: {
-                                    lineWidth: ctx => {
-                                        return ctx.tick?.label === '中性' ? 4 : 1; // 中性加粗
-                                    },
-                                    color: ctx => {
-                                    return ctx.tick?.label === '中性' ? '#7B7B7B' : '#e0e0e0'; // 中性線深灰色，其它淺灰
-                                }
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: '段落'
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // 呼叫後端 /suggestion 取得建議文字
-                const suggestResponse = await fetch("/suggestion", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        emotion_stats: result.pie_chart,
-                        line_series: result.line_chart
-                    })
-                });
-
-                if (suggestResponse.ok) {
-                    const suggestData = await suggestResponse.json();
-                    document.getElementById('suggestionText').innerHTML = suggestData.suggestion.replace(/\n/g, "<br>");
-                } else {
-                    document.getElementById('box3').textContent = "無法取得建議，請稍後再試。";
-                }
-                resultElement.textContent = `情緒預測結果：`;
-                resultElement.style.color = 'blue';
-            } catch (err) {
-                console.error('上傳錯誤', err);
-                resultElement.textContent = '發生錯誤，請再試一次';
-                resultElement.style.color = 'red';
-            }
+        // --- 2. 全域函式定義 ---
+        function getTodayDate() {
+            const today = new Date();
+            return today.toISOString().split("T")[0];
         }
-        document.getElementById("finalButton").addEventListener("click", async () => {
-            // 把前端的圖表轉成 base64
-            const pieBase64 = document.getElementById('pieChart').toDataURL("image/png").split(',')[1];
-            const lineBase64 = document.getElementById('lineChart').toDataURL("image/png").split(',')[1];
-            const suggestion = document.getElementById("suggestionText").innerHTML;
-            // 判斷是否有 <select id="patientSelect"> 元素
-            const select = document.getElementById("patientSelect");
-            const patientName = select ? select.value : null;
 
-            // 組成要送到後端的資料
-            const payload = {
-                pie_image: `data:image/png;base64,${pieBase64}`,
-                line_image: `data:image/png;base64,${lineBase64}`,
-                suggestion: suggestion
-            };
-            if (patientName) {
-                payload.patient_name = patientName;
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+        }
+        
+        function switchChat(date) {
+            currentDate = date;
+            chatHeader.innerText = date;
+            document.querySelectorAll(".chat-item").forEach(item => item.classList.remove("active"));
+            const selected = document.querySelector(`.chat-item[data-date="${date}"]`);
+            if (selected) selected.classList.add("active");
+
+            // 向後端撈取該日期紀錄
+            fetch(`/chat_history?date=${date}`)
+                .then(res => res.json())
+                .then(data => {
+                    records[date] = data.history || [];
+                    renderMessages();
+                });
+        }
+
+        function sendMessage() {
+            const text = chatInput.value.trim();
+            if (text === "") return;
+
+            let isNewChatSession = false;
+            // 如果還沒選定任何聊天日期，這就是一個新的對話
+            if (!currentDate) {
+                currentDate = getTodayDate();
+                isNewChatSession = true;
+
+                // 如果今天日期還沒出現在左側列表上，就新增它
+                if (!document.querySelector(`.chat-item[data-date="${currentDate}"]`)) {
+                    addDateToList(currentDate);
+                }
+            }
+            
+            // 如果是全新的對話，我們手動設定UI，而不是呼叫會覆蓋資料的 switchChat
+            if (isNewChatSession) {
+                chatHeader.innerText = currentDate;
+                document.querySelectorAll(".chat-item").forEach(item => item.classList.remove("active"));
+                const selected = document.querySelector(`.chat-item[data-date="${currentDate}"]`);
+                if (selected) selected.classList.add("active");
+
+                // 確保本地端的 records 陣列已初始化
+                if (!records[currentDate]) {
+                    records[currentDate] = [];
+                }
             }
 
-            // 傳送到後端產 PDF
-            const response = await fetch("/generate_report", {
+            // 新增使用者訊息到本地端
+            records[currentDate].push({ text, sender: "user", time: getCurrentTime() });
+
+            chatInput.value = "";
+            renderMessages(); // 立刻渲染，這時訊息還在
+
+            // 呼叫後端 AI 回覆
+            fetch("/chat_ai", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: text,
+                    history: records[currentDate],
+                    date: currentDate
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.reply) {
+                    records[currentDate].push({ text: data.reply, sender: "ai", time: getCurrentTime() });
+                    renderMessages();
+                }
+            });
+        }
+
+        function renderMessages() {
+            chatMessages.innerHTML = "";
+            if (records[currentDate] && records[currentDate].length > 0) {
+                records[currentDate].forEach(msg => {
+                    const msgDiv = document.createElement("div");
+                    msgDiv.classList.add("message", msg.sender);
+                    // 將換行符 \n 轉為 <br> 讓AI回覆的換行能正確顯示
+                    const formattedText = msg.text.replace(/\n/g, '<br>');
+                    msgDiv.innerHTML = `<div>${formattedText}</div><span class="timestamp">${msg.time}</span>`;
+                    chatMessages.appendChild(msgDiv);
+                });
+            } else {
+                // 提供更友善的初始提示
+                chatMessages.innerHTML = "<p style='text-align:center; color:#888;'>尚無紀錄，開始聊天吧！</p>";
+            }
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addDateToList(date) {
+            // ✨ 增加一道防線：如果日期已經存在於列表中，就直接返回，不要重複新增
+            if (document.querySelector(`.chat-item[data-date="${date}"]`)) return;
+
+            const item = document.createElement("div");
+            item.classList.add("chat-item");
+            item.setAttribute("data-date", date);
+
+            const dateText = document.createElement("span");
+            dateText.innerText = date;
+            dateText.style.flex = "1";
+            dateText.onclick = () => switchChat(date);
+
+            const deleteBtn = document.createElement("span");
+            deleteBtn.innerText = "✕";
+            deleteBtn.classList.add("delete-date-btn");
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm(`確定要刪除 ${date} 的聊天紀錄嗎？`)) {
+                    fetch("/delete_chat_date", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ date })
+                    })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.success) {
+                            delete records[date];
+                            item.remove();
+                            if (currentDate === date) {
+                                currentDate = null;
+                                chatHeader.innerText = "尚未選擇日期";
+                                renderMessages();
+                            }
+                        } else {
+                            alert("刪除失敗：" + (result.error || ""));
+                        }
+                    });
+                }
+            };
+
+            item.style.display = "flex";
+            item.style.justifyContent = "space-between";
+            item.style.alignItems = "center";
+            item.appendChild(dateText);
+            item.appendChild(deleteBtn);
+            dateList.appendChild(item);
+        }
+        
+        function createNewChat() {
+            const today = getTodayDate();
+            // 確保左側列表有今天的日期
+            if (!document.querySelector(`.chat-item[data-date="${today}"]`)) {
+                addDateToList(today);
+                if (!records[today]) {
+                    records[today] = [];
+                }
+            }
+            // 切換到今天的聊天室
+            switchChat(today);
+        }
+        
+        // --- 3. 程式進入點 (所有啟動程式碼都在這裡) ---
+        document.addEventListener('DOMContentLoaded', function() {
+            // 綁定 Enter 鍵送出
+            chatInput.addEventListener("keydown", e => {
+                if (e.key === "Enter") {
+                    sendMessage();
+                }
             });
 
-            // 接收 PDF blob 並觸發下載
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "情緒報告.pdf";
-                a.click();
-            } else {
-                alert("產生報告失敗！");
-            }
+            // 綁定「+」按鈕的點擊事件
+            document.getElementById('newChatBtn').addEventListener('click', createNewChat);
+            
+            // 頁面載入後，自動撈取所有歷史紀錄日期
+            fetch("/chat_dates")
+                .then(res => res.json())
+                .then(data => {
+                    // 從新到舊排序日期
+                    data.dates.sort((a, b) => b.localeCompare(a));
+                    data.dates.forEach(addDateToList);
+                });
         });
     </script>
 </body>
