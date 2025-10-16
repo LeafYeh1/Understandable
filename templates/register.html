@@ -73,6 +73,15 @@
             {% endif %}
             
             <input type="hidden" name="role" value="{{ role }}">
+
+            <div class="checkbox-container">
+                <input type="checkbox" id="agree_terms" required>
+                <label for="agree_terms">
+                    我已閱讀並同意
+                    <span class="terms-link" onclick="openModal()">《使用條款》</span>
+                </label>
+            </div>
+
             <button type="submit">註冊</button>
         </form>
         <p>已經有帳號了？<a href="{{ '/login_counselor' if role == 'counselor' else '/login_user' }}">登入</a></p>
@@ -89,6 +98,65 @@
                 {% endif %}
             {% endwith %}
         </div>
+        <div id="termsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            {% if role == 'counselor' %}
+                <h3>諮商師使用條款</h3>
+                <ul>
+                    <li>諮商師須對使用者的個人資料、聊天紀錄與心理狀態資訊嚴格保密，不得外流或作為研究、商業用途。</li>
+                    <li>諮商師應遵守專業倫理與本平台隱私政策，若發現異常使用情形，本平台有權暫停帳號。</li>
+                    <li>本平台僅提供技術服務，所有諮商行為之責任由諮商師本人承擔。</li>
+                    <li>諮商師同意，若違反保密義務或使用條款，平台可依法終止使用權限。</li>
+                </ul>
+            {% else %}
+                <h3>使用者使用條款</h3>
+                <ul>
+                    <li>使用者同意綁定的諮商師可存取其情緒分析紀錄與對話紀錄，以提供後續心理輔導。</li>
+                    <li>使用者的個資與情緒資料僅限於平台運作用途，不會對外公開或作為商業使用。</li>
+                    <li>使用者需誠實提供個人資訊，不得冒用他人身分註冊或上傳不當內容。</li>
+                    <li>若使用者違反本條款或影響系統安全，平台有權暫停或刪除帳號。</li>
+                </ul>
+            {% endif %}
+        </div>
     </div>
+    <div id="termsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            {% if role == 'counselor' %}
+                <h3>諮商師使用條款</h3>
+                <ul>
+                    <li>諮商師須對使用者的個人資料、聊天紀錄與心理狀態資訊嚴格保密，不得外流或作為研究、商業用途。</li>
+                    <li>諮商師應遵守專業倫理與本平台隱私政策，若發現異常使用情形，本平台有權暫停帳號。</li>
+                    <li>本平台僅提供技術服務，所有諮商行為之責任由諮商師本人承擔。</li>
+                    <li>諮商師同意，若違反保密義務或使用條款，平台可依法終止使用權限。</li>
+                </ul>
+            {% else %}
+                <h3>使用者使用條款</h3>
+                <ul>
+                    <li>使用者同意綁定的諮商師可存取其情緒分析紀錄與對話紀錄，以提供後續心理輔導。</li>
+                    <li>使用者的個資與情緒資料僅限於平台運作用途，不會對外公開或作為商業使用。</li>
+                    <li>使用者需誠實提供個人資訊，不得冒用他人身分註冊或上傳不當內容。</li>
+                    <li>若使用者違反本條款或影響系統安全，平台有權暫停或刪除帳號。</li>
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        const modal = document.getElementById("termsModal");
+        function openModal() { modal.style.display = "block"; }
+        function closeModal() { modal.style.display = "none"; }
+        window.onclick = function(event) {
+            if (event.target === modal) closeModal();
+        }
+        function validateForm() {
+            const checkbox = document.getElementById("agree_terms");
+            if (!checkbox.checked) {
+                alert("請先閱讀並同意使用條款");
+                return false;
+            }
+            return true;
+        }
+    </script>
 </body>
 </html>
