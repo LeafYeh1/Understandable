@@ -840,7 +840,7 @@ def suggestion():
         "【情緒調節方法】\n1. ...\n2. ...\n3. ...\n4. ...\n"
         "7) 請勿使用任何 Markdown 語法 (例如 #, *, -)，直接輸出純文字。\n"
     )
-    raw_suggestion = gemini_generate(prompt, max_output_tokens=2048, temperature=0.6) or "目前暫無建議，請稍後再試。"
+    raw_suggestion = gemini_generate(prompt, max_output_tokens=4096, temperature=0.6) or "目前暫無建議，請稍後再試。"
     suggestion_text = strip_markdown(raw_suggestion)
     
     print("=== 模型產出內容如下 ===")
