@@ -726,7 +726,7 @@ def generate_report():
     subject_value = patient_name if role == "counselor" else user.account
     
     # 1. 取得字體檔案在伺服器上的絕對路徑
-    font_path = os.path.join(current_app.root_path, 'static', 'fonts', 'NotoSansTC-Regular.otf')
+    font_path = os.path.join(current_app.root_path, 'static', 'fonts', 'NotoSansTC-Regular.ttf')
     # 2. 建立一個 CSS 樣式表，透過 @font-face 規則來定義字體
     #    注意 src: url(...) 裡使用的是字體的絕對路徑
     font_css = CSS(string=f"""
