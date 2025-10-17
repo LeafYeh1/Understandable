@@ -29,7 +29,7 @@ import io
 import traceback, logging
 
 import hashlib, pathlib, requests
-from weasyprint import HTML, CSS
+from pathlib import Path
 
 # 初始化 Flask 應用
 app = Flask(__name__)
@@ -724,63 +724,59 @@ def generate_report():
     print(f"Generating report for {subject_label}: {patient_name}")
     user = db.session.get(User, session["user_id"])
     subject_value = patient_name if role == "counselor" else user.account
-    
-    # 偵錯 Log 開始
-    print("--- Starting PDF Generation Debug ---")
-    try:
-        font_path = os.path.join(current_app.root_path, 'static', 'fonts', 'NotoSansTC-Regular.ttf')
-        print(f"1. Font path calculated: {font_path}")
-
-        # 檢查 Python Process 是否真的能「看到」這個檔案
-        if os.path.exists(font_path):
-            print("2. SUCCESS: os.path.exists() found the font file.")
-        else:
-            print("2. ERROR: os.path.exists() CANNOT find the font file! Check path and permissions.")
-            # 列出 static/fonts 目錄下的所有檔案，幫助偵錯
-            fonts_dir = os.path.join(current_app.root_path, 'static', 'fonts')
-            print(f"Contents of {fonts_dir}: {os.listdir(fonts_dir)}")
-
-        font_css = CSS(string=f"""
-            @font-face {{
-                font-family: 'NotoSansTC';
-                src: url('file://{font_path}');
-            }}
-            body {{
-                font-family: 'NotoSansTC', sans-serif;
-            }}
-        """)
-        print("3. CSS object created successfully.")
-
-        html_content = f"""
-        <html>
-        <head><meta charset='utf-8'></head>
-        <body>
-            <h2>情緒分析報告 (測試)</h2>
-            <p>{suggestion_html}</p>
-        </body></html>
-        """
-
-        pdf_buffer = BytesIO()
-        print("4. Attempting to write PDF...")
-        HTML(string=html_content).write_pdf(pdf_buffer, stylesheets=[font_css])
-        pdf_buffer.seek(0)
-        print("5. SUCCESS: PDF generated in memory.")
         
-        print("--- PDF Generation Debug End ---")
-        return send_file(
-            pdf_buffer,
-            as_attachment=True,
-            download_name=f"emotion_report_test.pdf",
-            mimetype="application/pdf"
-        )
+    # 簡易 HTML 模板
+    html_content = f"""
+    <html>
+    <head><meta charset='utf-8'>
+    <style>
+        @font-face {
+          font-family: "NotoSansTC";
+          src: url("static/fonts/NotoSansTC-Regular.ttf") format("truetype");
+        }
+        html, body {{
+          font-family: "NotoSansTC", "Arial", sans-serif;
+          font-size: 14px;
+        }}
+        body {{ padding: 20px; }}
+        h2 {{ color: #3366cc; margin-top: 0; }}
+        .section {{ margin-bottom: 24px; }}
+        p {{ line-height: 1.6; }}
+        img {{ display:block; margin: 0 auto; }}
+      </style></head>
+    <body>
+        <h2>情緒分析報告</h2>
+        <div class="section">
+            <strong>{subject_label}：</strong> {subject_value}<br>
+            <strong>分析時間：</strong> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        </div>
+        <div class="section">
+            <h3>情緒圓餅圖</h3>
+            <img src="{data.get('pie_image')}" style="width:300px; height:auto; display:block; margin:auto;">
+         </div>
+        <div class="section">
+            <h3>時間序列折線圖</h3>
+            <img src="{data.get('line_image')}" width="300">
+        </div>
+        <div class="section">
+            <h3>情緒建議</h3>
+            <p>{suggestion_html}</p>
+        </div>
+    </body></html>
+    """
 
-    except Exception as e:
-        # 如果 PDF 生成過程中有任何錯誤，都會在這裡被印出來
-        print(f"CRITICAL ERROR during PDF generation: {e}")
-        print("--- PDF Generation Debug End (with error) ---")
-        # 返回一個錯誤訊息，而不是讓應用崩潰
-        return {"error": "Failed to generate PDF", "details": str(e)}, 500
-    
+    # 轉成 PDF
+    pdf_buffer = BytesIO()
+    base_url = str(Path(current_app.root_path))
+    HTML(string=html_content, base_url=base_url).write_pdf(pdf_buffer)
+    pdf_buffer.seek(0)
+
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name=f"emotion_report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf",
+        mimetype="application/pdf"
+    )
 # 音檔預測
 @app.route("/predict", methods=["POST"])
 def predict():
