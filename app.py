@@ -725,62 +725,62 @@ def generate_report():
     user = db.session.get(User, session["user_id"])
     subject_value = patient_name if role == "counselor" else user.account
     
-    # 1. 取得字體檔案在伺服器上的絕對路徑
-    font_path = os.path.join(current_app.root_path, 'static', 'fonts', 'NotoSansTC-Regular.ttf')
-    # 2. 建立一個 CSS 樣式表，透過 @font-face 規則來定義字體
-    #    注意 src: url(...) 裡使用的是字體的絕對路徑
-    font_css = CSS(string=f"""
-        @font-face {{
-            font-family: 'NotoSansTC';
-            src: url('file://{font_path}');
-            font-weight: normal;
-            font-style: normal;
-        }}
-        body {{
-            font-family: 'NotoSansTC', sans-serif; /* 應用這個字體到整個 body */
-        }}
-    """)
-    
-    # 簡易 HTML 模板
-    html_content = f"""
-    <html>
-    <head><meta charset='utf-8'><style>
-        body {{padding: 20px; }}
-        h2 {{ color: #3366cc; }}
-        .section {{ margin-bottom: 30px; }}
-    </style></head>
-    <body>
-        <h2>情緒分析報告</h2>
-        <div class="section">
-            <strong>{subject_label}：</strong> {subject_value}<br>
-            <strong>分析時間：</strong> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-        </div>
-        <div class="section">
-            <h3>情緒圓餅圖</h3>
-            <img src="{data.get('pie_image')}" style="width:300px; height:auto; display:block; margin:auto;">
-         </div>
-        <div class="section">
-            <h3>時間序列折線圖</h3>
-            <img src="{data.get('line_image')}" width="300">
-        </div>
-        <div class="section">
-            <h3>情緒建議</h3>
+    # 偵錯 Log 開始
+    print("--- Starting PDF Generation Debug ---")
+    try:
+        font_path = os.path.join(current_app.root_path, 'static', 'fonts', 'NotoSansTC-Regular.ttf')
+        print(f"1. Font path calculated: {font_path}")
+
+        # 檢查 Python Process 是否真的能「看到」這個檔案
+        if os.path.exists(font_path):
+            print("2. SUCCESS: os.path.exists() found the font file.")
+        else:
+            print("2. ERROR: os.path.exists() CANNOT find the font file! Check path and permissions.")
+            # 列出 static/fonts 目錄下的所有檔案，幫助偵錯
+            fonts_dir = os.path.join(current_app.root_path, 'static', 'fonts')
+            print(f"Contents of {fonts_dir}: {os.listdir(fonts_dir)}")
+
+        font_css = CSS(string=f"""
+            @font-face {{
+                font-family: 'NotoSansTC';
+                src: url('file://{font_path}');
+            }}
+            body {{
+                font-family: 'NotoSansTC', sans-serif;
+            }}
+        """)
+        print("3. CSS object created successfully.")
+
+        html_content = f"""
+        <html>
+        <head><meta charset='utf-8'></head>
+        <body>
+            <h2>情緒分析報告 (測試)</h2>
             <p>{suggestion_html}</p>
-        </div>
-    </body></html>
-    """
+        </body></html>
+        """
 
-    # 轉成 PDF
-    pdf_buffer = BytesIO()
-    HTML(string=html_content).write_pdf(pdf_buffer, stylesheets=[font_css])
-    pdf_buffer.seek(0)
+        pdf_buffer = BytesIO()
+        print("4. Attempting to write PDF...")
+        HTML(string=html_content).write_pdf(pdf_buffer, stylesheets=[font_css])
+        pdf_buffer.seek(0)
+        print("5. SUCCESS: PDF generated in memory.")
+        
+        print("--- PDF Generation Debug End ---")
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f"emotion_report_test.pdf",
+            mimetype="application/pdf"
+        )
 
-    return send_file(
-        pdf_buffer,
-        as_attachment=True,
-        download_name=f"emotion_report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf",
-        mimetype="application/pdf"
-    )
+    except Exception as e:
+        # 如果 PDF 生成過程中有任何錯誤，都會在這裡被印出來
+        print(f"CRITICAL ERROR during PDF generation: {e}")
+        print("--- PDF Generation Debug End (with error) ---")
+        # 返回一個錯誤訊息，而不是讓應用崩潰
+        return {"error": "Failed to generate PDF", "details": str(e)}, 500
+    
 # 音檔預測
 @app.route("/predict", methods=["POST"])
 def predict():
