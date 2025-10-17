@@ -772,7 +772,7 @@ def generate_report():
 
     # 轉成 PDF
     pdf_buffer = BytesIO()
-    HTML(string=html_content).write_pdf(pdf_buffer)
+    HTML(string=html_content).write_pdf(pdf_buffer, stylesheets=[font_css])
     pdf_buffer.seek(0)
 
     return send_file(
