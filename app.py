@@ -1,7 +1,7 @@
 import os
 # flask 基礎設定
 from flask import Flask, request, jsonify
-from flask import render_template, send_file, session, redirect, url_for, flash
+from flask import render_template, send_file, session, redirect, url_for, flash, current_app
 from flask_sqlalchemy import SQLAlchemy
 
 # 第三方函式庫
@@ -29,6 +29,7 @@ import io
 import traceback, logging
 
 import hashlib, pathlib, requests
+from weasyprint import HTML, CSS
 
 # 初始化 Flask 應用
 app = Flask(__name__)
@@ -724,11 +725,27 @@ def generate_report():
     user = db.session.get(User, session["user_id"])
     subject_value = patient_name if role == "counselor" else user.account
     
+    # 1. 取得字體檔案在伺服器上的絕對路徑
+    font_path = os.path.join(current_app.root_path, 'static', 'fonts', 'NotoSansTC-Regular.otf')
+    # 2. 建立一個 CSS 樣式表，透過 @font-face 規則來定義字體
+    #    注意 src: url(...) 裡使用的是字體的絕對路徑
+    font_css = CSS(string=f"""
+        @font-face {{
+            font-family: 'NotoSansTC';
+            src: url('file://{font_path}');
+            font-weight: normal;
+            font-style: normal;
+        }}
+        body {{
+            font-family: 'NotoSansTC', sans-serif; /* 應用這個字體到整個 body */
+        }}
+    """)
+    
     # 簡易 HTML 模板
     html_content = f"""
     <html>
     <head><meta charset='utf-8'><style>
-        body {{ font-family: Arial; padding: 20px; }}
+        body {{padding: 20px; }}
         h2 {{ color: #3366cc; }}
         .section {{ margin-bottom: 30px; }}
     </style></head>
