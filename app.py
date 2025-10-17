@@ -730,10 +730,10 @@ def generate_report():
     <html>
     <head><meta charset='utf-8'>
     <style>
-        @font-face {
+        @font-face {{
           font-family: "NotoSansTC";
           src: url("static/fonts/NotoSansTC-Regular.ttf") format("truetype");
-        }
+        }}
         html, body {{
           font-family: "NotoSansTC", "Arial", sans-serif;
           font-size: 14px;
