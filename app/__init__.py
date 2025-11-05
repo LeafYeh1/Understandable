@@ -19,7 +19,7 @@ def create_app():
     
     @app.route('/')
     def index():
-        return redirect(url_for('core_routes.core_bp.index'))
+        return redirect(url_for('core.choose_role'))
     
     # 2. 載入設定
     app.config.from_object(Config)
