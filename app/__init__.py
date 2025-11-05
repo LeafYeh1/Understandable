@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask
+from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 from .config import Config
@@ -16,6 +16,10 @@ def create_app():
     應用程式工廠函數
     """
     app = Flask(__name__)
+    
+    @app.route('/')
+    def index():
+        return redirect(url_for('core_routes.core_bp.index'))
     
     # 2. 載入設定
     app.config.from_object(Config)
