@@ -62,7 +62,7 @@
 <body>
     <div class="container">
         <h2>我的患者資訊</h2>
-        <a href="/patients/add" class="add-btn">新增患者</a>
+        <a href="{{ url_for('core.add_patient') }}" class="add-btn">新增患者</a>
         <!--如果這個諮商師有新增過患者-->
         {% for p in patients %}
         <div class="patient-card">
@@ -76,7 +76,7 @@
         <p>尚未新增任何患者。</p>
         {% endfor %}
         <!-- 返回主畫面按鈕 -->
-        <a href="/home" class="back-btn">返回</a>
+        <a href="{{ url_for('core.home') }}" class="back-btn">返回</a>
     </div>
 </body>
 </html>

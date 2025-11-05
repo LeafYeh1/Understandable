@@ -94,11 +94,11 @@
         </p>
 
         <div class="options">
-            <a href="/login_user" class="option-box">
+            <a href="{{ url_for('auth.login_user') }}" class="option-box">
                 <i class="fas fa-user"></i>
                 <h3>我是使用者</h3>
             </a>
-            <a href="/login_counselor" class="option-box">
+            <a href="{{ url_for('auth.login_counselor') }}" class="option-box">
                 <i class="fas fa-user-md"></i>
                 <h3>我是諮商師</h3>
             </a>

@@ -62,7 +62,7 @@
             <input type="password" name="password" placeholder="密碼" required><br>
             <button type="submit">登入</button>
         </form>
-        <p>還沒有帳號？<a href="/register_counselor">註冊</a></p>
+        <p>還沒有帳號？<a href="{{ url_for('auth.register_counselor') }}">註冊</a></p>
         
         <!--會有暫時性的提示訊息-->
         <div class="messages">

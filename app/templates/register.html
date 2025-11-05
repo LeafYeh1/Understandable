@@ -109,7 +109,7 @@
 
             <button type="submit">註冊</button>
         </form>
-        <p>已經有帳號了？<a href="{{ '/login_counselor' if role == 'counselor' else '/login_user' }}">登入</a></p>
+        <p>已經有帳號了？<a href="{{ url_for('auth.login_counselor' if role == 'counselor' else 'auth.login_user') }}">登入</a></p>
 
         <!--會有暫時性的提示訊息-->
         <div class="messages">

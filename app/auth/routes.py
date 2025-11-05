@@ -15,7 +15,7 @@ def login_counselor():
         if user and check_password_hash(user.password, password):
             session["user_id"] = user.id
             session["role"] = "counselor" # 設定角色為諮商師
-            return redirect(url_for("auth.home"))
+            return redirect(url_for("core.home"))
         else:
             flash("帳號或密碼錯誤，或角色不符")
     return render_template("login_counselor.html")
@@ -29,7 +29,7 @@ def login_user():
         if user and check_password_hash(user.password, password):
             session["user_id"] = user.id
             session["role"] = "user" # 設定角色為使用者
-            return redirect(url_for("auth.home"))
+            return redirect(url_for("core.home"))
         else:
             flash("帳號或密碼錯誤，或角色不符")
     return render_template("login_user.html")

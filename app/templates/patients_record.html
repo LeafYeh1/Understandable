@@ -43,14 +43,14 @@
     {% for p in patients %}
       <li>
         <strong>{{ p.account }}</strong>
-        <a href="{{ url_for('patient_chat', user_id=p.id) }}">查看聊天紀錄</a>
+        <a href="{{ url_for('chat.patient_chat', user_id=p.id) }}">查看聊天紀錄</a>
       </li>
     {% else %}
       <li style="text-align: center; color: #666;">目前沒有患者綁定</li>
     {% endfor %}
   </ul>
   <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-    <a href="{{ url_for('home') }}" 
+    <a href="{{ url_for('core.home') }}" 
       style="text-decoration: none; padding: 8px 15px; font-size: 16px; border-radius: 8px; background-color:#6c757d; color: white; cursor: pointer;">
         返回首頁
     </a>

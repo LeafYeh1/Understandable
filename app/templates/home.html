@@ -90,41 +90,41 @@
 
         <div class="options">
             {% if role == "counselor" %}
-                <a href="/patients" class="option-box">
+                <a href="{{ url_for('core.patients') }}" class="option-box">
                 <i class="fas fa-brain"></i>
                 <h3>患者資訊</h3>
                 </a>
             {% endif %}
             
-            <a href="/record" class="option-box">
+            <a href="{{ url_for('core.record') }}" class="option-box">
                 <i class="fas fa-microphone"></i>
                 <h3>錄製語音</h3>
             </a>
-            <a href="/predict_upload" class="option-box">
+            <a href="{{ url_for('analysis.predict_upload') }}" class="option-box">
                 <i class="fas fa-upload"></i>
                 <h3>上傳音檔</h3>
             </a>
             {% if role == "user" %}
-            <a href="/chat" class="option-box">
+            <a href="{{ url_for('chat.index') }}" class="option-box">
                 <i class="fas fa-comment-dots"></i>
                 <h3>我的天地</h3>
             </a>
             {% endif %}
             {% if role == "user" %}
-            <a href="/mycounselor" class="option-box">
+            <a href="{{ url_for('core.mycounselor') }}" class="option-box">
                 <i class="fas fa-hand-holding-heart"></i>
                 <h3>我的諮商師</h3>
             </a>
             {% endif %}
             {% if role == "counselor" %}
-                <a href="/patients_record" class="option-box">
+                <a href="{{ url_for('core.patients_record') }}" class="option-box">
                 <i class="fas fa-notes-medical"></i>
                 <h3>患者紀錄</h3>
                 </a>
             {% endif %}
         </div>
         <div style="text-align:center;">
-            <a href="/logout" class="logout">登出</a>
+            <a href="{{ url_for('auth.logout') }}" class="logout">登出</a>
         </div>
     </div>
 </body>
