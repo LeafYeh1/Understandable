@@ -41,7 +41,7 @@ def create_app():
     from .services import ml_models
     with app.app_context():
         app.logger.info("Starting model preload...")
-        ml_models.preload_models(app.logger) # 傳入 logger
+        ml_models.preload_models(app.logger, app.config)
         app.logger.info("Model preload complete.")
 
     return app
