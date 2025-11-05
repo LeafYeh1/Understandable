@@ -15,7 +15,7 @@ def login_counselor():
         if user and check_password_hash(user.password, password):
             session["user_id"] = user.id
             session["role"] = "counselor" # 設定角色為諮商師
-            return redirect(url_for("home"))
+            return redirect(url_for("auth.home"))
         else:
             flash("帳號或密碼錯誤，或角色不符")
     return render_template("login_counselor.html")
@@ -29,7 +29,7 @@ def login_user():
         if user and check_password_hash(user.password, password):
             session["user_id"] = user.id
             session["role"] = "user" # 設定角色為使用者
-            return redirect(url_for("home"))
+            return redirect(url_for("auth.home"))
         else:
             flash("帳號或密碼錯誤，或角色不符")
     return render_template("login_user.html")
@@ -75,7 +75,7 @@ def register_user():
         db.session.commit()
 
         flash("註冊成功，請登入。", "success")
-        return redirect(url_for("login_user"))
+        return redirect(url_for("auth.login_user"))
 
     return render_template("register.html", role="user")
 
@@ -120,7 +120,7 @@ def register_counselor():
         db.session.commit()
 
         flash("註冊成功，請登入。", "success")
-        return redirect(url_for("login_counselor"))
+        return redirect(url_for("auth.login_counselor"))
     return render_template("register.html", role="counselor")
 
 # 登出要求
@@ -128,4 +128,4 @@ def register_counselor():
 def logout():
     session.pop("user_id", None)
     session.clear()
-    return redirect(url_for("choose_role"))
+    return redirect(url_for("core.choose_role"))
