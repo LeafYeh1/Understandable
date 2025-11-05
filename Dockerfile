@@ -25,4 +25,4 @@ COPY . .
 
 # Heroku 會自動注入 PORT 環境變數
 # 這行指令會啟動你的 Gunicorn 伺服器
-CMD gunicorn --timeout 120 --workers 1 --bind 0.0.0.0:$PORT app:app
+CMD gunicorn --timeout 120 --workers 1 --bind 0.0.0.0:$PORT run:app
