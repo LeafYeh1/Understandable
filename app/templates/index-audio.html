@@ -274,7 +274,7 @@
             lineCtx.clearRect(0, 0, lineCtx.canvas.width, lineCtx.canvas.height);
 
         try {
-            const response = await fetch('/predict', {
+            const response = await fetch('/analysis/predict', {
                 method: 'POST',
                 body: formData
             });

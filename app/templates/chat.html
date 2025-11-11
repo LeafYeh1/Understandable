@@ -380,7 +380,7 @@
           document.getElementById('newChatBtn').addEventListener('click', createNewChat);
           
           // 頁面載入後，自動撈取所有歷史紀錄日期
-          fetch("/chat_dates")
+          fetch("/chat/dates")
               .then(res => res.json())
               .then(data => {
                   // 從新到舊排序日期

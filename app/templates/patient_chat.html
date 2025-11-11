@@ -52,7 +52,7 @@ document.getElementById('summarizeBtn').addEventListener('click', async function
     summarizeBtn.textContent = '分析中...';
 
     try {
-        const response = await fetch('/summarize_chat', {
+        const response = await fetch('/chat/summarize', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
