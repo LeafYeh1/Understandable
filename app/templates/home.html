@@ -100,7 +100,7 @@
                 <i class="fas fa-microphone"></i>
                 <h3>錄製語音</h3>
             </a>
-            <a href="{{ url_for('analysis.predict') }}" class="option-box">
+            <a href="{{ url_for('core.predict_upload') }}" class="option-box">
                 <i class="fas fa-upload"></i>
                 <h3>上傳音檔</h3>
             </a>
@@ -117,7 +117,7 @@
             </a>
             {% endif %}
             {% if role == "counselor" %}
-                <a href="{{ url_for('core.patients') }}" class="option-box">
+                <a href="{{ url_for('chat.patient_chat') }}" class="option-box">
                 <i class="fas fa-notes-medical"></i>
                 <h3>患者紀錄</h3>
                 </a>
