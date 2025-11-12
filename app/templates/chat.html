@@ -324,7 +324,7 @@
           deleteBtn.onclick = (e) => {
               e.stopPropagation();
               if (confirm(`確定要刪除 ${date} 的聊天紀錄嗎？`)) {
-                  fetch("/chat/delete_chat_date", {
+                  fetch("/chat/delete_date", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ date })
