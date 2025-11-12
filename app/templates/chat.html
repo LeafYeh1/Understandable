@@ -225,7 +225,7 @@
           if (selected) selected.classList.add("active");
 
           // 向後端撈取該日期紀錄
-          fetch(`/chat_history?date=${date}`)
+          fetch(`/chat/history?date=${date}`)
               .then(res => res.json())
               .then(data => {
                   records[date] = data.history || [];
@@ -269,7 +269,7 @@
           renderMessages(); // 立刻渲染，這時訊息還在
 
           // 呼叫後端 AI 回覆
-          fetch("/chat_ai", {
+          fetch("/chat/ai", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -324,7 +324,7 @@
           deleteBtn.onclick = (e) => {
               e.stopPropagation();
               if (confirm(`確定要刪除 ${date} 的聊天紀錄嗎？`)) {
-                  fetch("/delete_chat_date", {
+                  fetch("/chat/delete_chat_date", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ date })

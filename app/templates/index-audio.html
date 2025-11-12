@@ -222,7 +222,7 @@
         }
 
         // 傳送到後端產 PDF
-        const response = await fetch("http://localhost:5000/generate_report", {
+        const response = await fetch("/analysis/generate_report", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -352,7 +352,7 @@
             });
 
             // 呼叫後端 /suggestion 取得建議文字
-            const suggestResponse = await fetch("/suggestion", {
+            const suggestResponse = await fetch("/analysis/suggestion", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
